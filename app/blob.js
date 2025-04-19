@@ -3,7 +3,7 @@ import * as Utils from './utils.js';
 import * as Map from './map.js';
 import * as Stains from './stain.js';
 import * as Splats from './splats.js';
-import { BufferAttribute, BufferGeometry, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, SphereGeometry, Vector3 } from '../vendor/three.module.js';
+import { BufferAttribute, BufferGeometry, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshNormalMaterial, SphereGeometry, Vector3 } from '../vendor/three.module.js';
 import * as Render from './render3d.js';
 
 export default class Blob {
@@ -73,6 +73,7 @@ class Arm {
         this.width = this.baseWidth;
 
         this.segmentsCount = 10;
+        // this.segmentsCount = 5;
 
         this.targetPosX = this.posX + Math.cos(this.angle) * this.length;
         this.targetPosY = this.posY + Math.sin(this.angle) * this.length;
@@ -95,7 +96,7 @@ class Arm {
 
         this.meshLine = this.#buildMeshLine(this.segmentsCount);
         this.meshFaces = this.#buildMeshFace(this.segmentsCount);
-        Render.add(this.meshLine);
+        // Render.add(this.meshLine);
         Render.add(this.meshFaces);
     }
 
@@ -112,44 +113,41 @@ class Arm {
     }
 
     #buildMeshFace(segmentsCount) {
-        const material = new MeshBasicMaterial({color: 0x00ff00, side: DoubleSide});
+        const material = new MeshBasicMaterial({color: 0x00ff00});
+        // const material = new MeshNormalMaterial({color: 0x00ff00, side: DoubleSide});
         let index = 0;
         const facesIndex = [];
         const positions = [];
         const z = 5;
         
-        for (let i = 0; i < segmentsCount; i ++) {
+        for (let i = 0; i < segmentsCount + 1; i ++) {
             positions.push(
                 0, 0, z,
                 0, 0, z,
-                0, 0, z,
             );
-            facesIndex.push(
-                index + 0,
-                index + 1,
-                index + 2,
-            )
-            index += 3;
+        }
 
-            positions.push(
-                0, 0, z,
-                0, 0, z,
-                0, 0, z,
-            );
+        index = 0;
+
+        for (let i = 0; i < segmentsCount; i ++) {
             facesIndex.push(
-                index + 0,
                 index + 1,
+                index + 0,
                 index + 2,
+
+                index + 2,
+                index + 3,
+                index + 1,
             )
-            index += 3;
+            index += 2;
         }
 
         const vertices = new Float32Array(positions);
 
         const geometry = new BufferGeometry();
         geometry.setIndex(facesIndex);
-        
         geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+
         return new Mesh(geometry, material);
     }
 
@@ -158,9 +156,9 @@ class Arm {
         let positionsFace = positionAttributeFace.array;
         let positionAttribute = this.meshLine.geometry.attributes.position;
         let positions = positionAttribute.array;
-        
+
         for (let i = 0; i < this.segmentsCount + 0; i ++) {
-            const indexFace = i * 18;
+            let indexFace = i * 6;
             
             const faceWidth = this.segments[i].width * 0.5;
             const startX = this.segments[i].start.x;
@@ -174,24 +172,20 @@ class Arm {
             const offsetX = Math.sin(borderAngle) * faceWidth;
             const offsetY = Math.cos(borderAngle) * faceWidth;
 
-
             positionsFace[indexFace + 0] = startX - offsetX;
             positionsFace[indexFace + 1] = startY - offsetY;
 
             positionsFace[indexFace + 3] = startX + offsetX;
             positionsFace[indexFace + 4] = startY + offsetY;
 
-            positionsFace[indexFace + 6] = endX - offsetX;
-            positionsFace[indexFace + 7] = endY - offsetY;
+            if (i === this.segmentsCount - 1) {
+                indexFace += 6;
+                positionsFace[indexFace + 0] = endX - offsetX;
+                positionsFace[indexFace + 1] = endY - offsetY;
 
-            positionsFace[indexFace + 9] = endX - offsetX;
-            positionsFace[indexFace + 10] = endY - offsetY;
-
-            positionsFace[indexFace + 12] = startX + offsetX;
-            positionsFace[indexFace + 13] = startY + offsetY;
-
-            positionsFace[indexFace + 15] = endX + offsetX;
-            positionsFace[indexFace + 16] = endY + offsetY;
+                positionsFace[indexFace + 3] = endX + offsetX;
+                positionsFace[indexFace + 4] = endY + offsetY;
+            }
 
             const index = i * 3;
 
@@ -201,7 +195,7 @@ class Arm {
                 segmentIndex = i - 1;
                 key = 'end';
             }
-            
+
             positions[index + 0] = this.segments[segmentIndex][key].x;
             positions[index + 1] = this.segments[segmentIndex][key].y;
         }
