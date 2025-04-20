@@ -1,3 +1,5 @@
+import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "../vendor/three.module.js";
+
 export const walls = [];
 
 const wallsPositions = [
@@ -31,3 +33,57 @@ wallsPositions.forEach(wallPos => {
         positions: wallPos
     });
 });
+
+export function buildMesh() {
+    let facesIndex = 0;
+    const faces = [];
+    const positions = [];
+    const width = 7;
+    const zPos = 0;
+
+    walls.forEach(wallData => {
+        const borderAngle = wallData.angle * -1// - Math.PI * 2;
+        const offsetX = Math.sin(borderAngle) * width;
+        const offsetY = Math.cos(borderAngle) * width;
+
+        const startPos = wallData.positions[0];
+        const endPos = wallData.positions[1];
+
+        positions.push(
+            startPos.x - offsetX,
+            startPos.y - offsetY,
+            zPos,
+
+            startPos.x + offsetX,
+            startPos.y + offsetY,
+            zPos,
+
+            endPos.x + offsetX,
+            endPos.y + offsetY,
+            zPos,
+
+            endPos.x - offsetX,
+            endPos.y - offsetY,
+            zPos,
+        );
+
+        faces.push(
+            facesIndex + 3,
+            facesIndex + 1,
+            facesIndex + 0,
+
+            facesIndex + 3,
+            facesIndex + 2,
+            facesIndex + 1,
+        );
+        facesIndex += 4;
+    });
+
+    const vertices = new Float32Array(positions);
+    const geometry = new BufferGeometry();
+    geometry.setIndex(faces);
+    geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+
+    const material = new MeshBasicMaterial({color: '#606060'});
+    return new Mesh(geometry, material);
+}
