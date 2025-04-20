@@ -3,8 +3,9 @@ import * as Utils from './utils.js';
 import * as Map from './map.js';
 import * as Stains from './stain.js';
 import * as Splats from './splats.js';
-import { BufferAttribute, BufferGeometry, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshNormalMaterial, SphereGeometry, Vector3 } from '../vendor/three.module.js';
+import { BufferAttribute, BufferGeometry, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshPhysicalMaterial, PlaneBufferGeometry, SphereGeometry, Vector3 } from '../vendor/three.module.js';
 import * as Render from './render3d.js';
+import * as ImageLoader from './ImageLoader.js';
 
 export default class Blob {
     constructor() {
@@ -15,7 +16,9 @@ export default class Blob {
         this.arms = this.initArms(16);
 
         this.bodyGeometry = new SphereGeometry(5);
-        this.bodyMesh = new Mesh(this.bodyGeometry, new MeshBasicMaterial({color: '#ff0000'}));
+        const material = new MeshBasicMaterial({color: '#ff0000', map: ImageLoader.get('arm')});
+        // const material = new MeshPhysicalMaterial({color: '#ff0000'});
+        this.bodyMesh = new Mesh(this.bodyGeometry, material);
         Render.add(this.bodyMesh);
     }
 
@@ -94,36 +97,34 @@ class Arm {
 
         this.segments = this.buildSegments();
 
-        this.meshLine = this.#buildMeshLine(this.segmentsCount);
         this.meshFaces = this.#buildMeshFace(this.segmentsCount);
-        // Render.add(this.meshLine);
         Render.add(this.meshFaces);
     }
 
-    #buildMeshLine(segmentsCount) {
-        const material = new LineBasicMaterial({color: 0x0000ff, linewidth: 10});
-        const points = [];
-
-        for (let i = 0; i < segmentsCount + 1; i ++) {
-            points.push(new Vector3(i, 0, 0));
-        }
-
-        const geometry = new BufferGeometry().setFromPoints(points);
-        return new Line(geometry, material);
-    }
-
     #buildMeshFace(segmentsCount) {
-        const material = new MeshBasicMaterial({color: 0x00ff00});
-        // const material = new MeshNormalMaterial({color: 0x00ff00, side: DoubleSide});
+        const material = new MeshBasicMaterial({color: 0xffffff, map: ImageLoader.get('arm')});
+        // const material = new MeshPhysicalMaterial({color: 0xffffff, map: ImageLoader.get('arm')});
+        // const material = new MeshNormalMaterial();
         let index = 0;
         const facesIndex = [];
         const positions = [];
+        const normals = [];
+        const uv = [];
         const z = 5;
+        const uvStep = 1 / segmentsCount;
         
         for (let i = 0; i < segmentsCount + 1; i ++) {
             positions.push(
                 0, 0, z,
                 0, 0, z,
+            );
+            normals.push(
+                0.5, 0, 0.5,
+                -0.5, 0, 0.5,
+            );
+            uv.push(
+                0, uvStep * i,
+                1, uvStep * i,
             );
         }
 
@@ -147,6 +148,10 @@ class Arm {
         const geometry = new BufferGeometry();
         geometry.setIndex(facesIndex);
         geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+        // geometry.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
+        geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
+        geometry.computeVertexNormals();
+        geometry.normalizeNormals();
 
         return new Mesh(geometry, material);
     }
@@ -154,8 +159,6 @@ class Arm {
     updagesegmentsVertices() {
         let positionAttributeFace = this.meshFaces.geometry.attributes.position;
         let positionsFace = positionAttributeFace.array;
-        let positionAttribute = this.meshLine.geometry.attributes.position;
-        let positions = positionAttribute.array;
 
         for (let i = 0; i < this.segmentsCount + 0; i ++) {
             let indexFace = i * 6;
@@ -186,22 +189,11 @@ class Arm {
                 positionsFace[indexFace + 3] = endX + offsetX;
                 positionsFace[indexFace + 4] = endY + offsetY;
             }
-
-            const index = i * 3;
-
-            let segmentIndex = i;
-            let key = 'start';
-            if (i >= this.segmentsCount) {
-                segmentIndex = i - 1;
-                key = 'end';
-            }
-
-            positions[index + 0] = this.segments[segmentIndex][key].x;
-            positions[index + 1] = this.segments[segmentIndex][key].y;
         }
 
-        positionAttribute.needsUpdate = true;
         positionAttributeFace.needsUpdate = true;
+
+        this.meshFaces.geometry.computeVertexNormals();
     }
 
     onFrame(posX, posY) {
