@@ -102,9 +102,13 @@ class Arm {
     }
 
     #buildMeshFace(segmentsCount) {
-        const material = new MeshBasicMaterial({color: 0xffffff, map: ImageLoader.get('arm')});
+        // const material = new MeshBasicMaterial({color: 0xffffff, map: ImageLoader.get('arm-alpha')});
+        const material = new MeshBasicMaterial({
+            color: 0xff0000,
+            transparent: true,
+            alphaMap: ImageLoader.get('arm-alpha'),
+        });
         // const material = new MeshPhysicalMaterial({color: 0xffffff, map: ImageLoader.get('arm')});
-        // const material = new MeshNormalMaterial();
         let index = 0;
         const facesIndex = [];
         const positions = [];
@@ -123,9 +127,13 @@ class Arm {
                 -0.5, 0, 0.5,
             );
             uv.push(
-                0, uvStep * i,
-                1, uvStep * i,
+                0, i * 0.8,
+                1, i * 0.8,
             );
+            // uv.push(
+            //     0, uvStep * i,
+            //     1, uvStep * i,
+            // );
         }
 
         index = 0;
@@ -157,13 +165,19 @@ class Arm {
     }
 
     updagesegmentsVertices() {
+        let uvAttribute = this.meshFaces.geometry.attributes.uv;
+        let uvValues = uvAttribute.array;
         let positionAttributeFace = this.meshFaces.geometry.attributes.position;
         let positionsFace = positionAttributeFace.array;
 
         for (let i = 0; i < this.segmentsCount + 0; i ++) {
             let indexFace = i * 6;
+            let indexUv = i * 4;
             
-            const faceWidth = this.segments[i].width * 0.5;
+            // const faceWidth = this.segments[i].width * 0.3;
+            const faceWidth = Math.max(0.4, Math.round(this.segments[i].width * 0.5));
+            // const faceWidth = Math.max(0.5, this.segments[i].width * 0.2);
+
             const startX = this.segments[i].start.x;
             const startY = this.segments[i].start.y;
             const endX = this.segments[i].end.x;
@@ -181,6 +195,9 @@ class Arm {
             positionsFace[indexFace + 3] = startX + offsetX;
             positionsFace[indexFace + 4] = startY + offsetY;
 
+            uvValues[indexUv + 1] = i * 0.8 - this.time * 0.03;
+            uvValues[indexUv + 3] = i * 0.8 - this.time * 0.03;
+
             if (i === this.segmentsCount - 1) {
                 indexFace += 6;
                 positionsFace[indexFace + 0] = endX - offsetX;
@@ -192,6 +209,7 @@ class Arm {
         }
 
         positionAttributeFace.needsUpdate = true;
+        uvAttribute.needsUpdate = true;
 
         this.meshFaces.geometry.computeVertexNormals();
     }

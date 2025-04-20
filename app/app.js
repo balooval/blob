@@ -11,7 +11,11 @@ export function init() {
 		{
 			id: 'arm',
 			url: './assets/arm.png'
-		}
+		},
+		{
+			id: 'arm-alpha',
+			url: './assets/arm-alpha.png'
+		},
 	]).then(res => {
 		Render.init('viewport');
 		UiMouse.init('viewport');
