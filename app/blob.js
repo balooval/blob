@@ -3,7 +3,7 @@ import * as Utils from './utils.js';
 import * as Map from './map.js';
 import * as Stains from './stain.js';
 import * as Splats from './splats.js';
-import { BufferAttribute, BufferGeometry, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshPhysicalMaterial, PlaneBufferGeometry, SphereGeometry, Vector3 } from '../vendor/three.module.js';
+import { BufferAttribute, BufferGeometry, Color, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshPhysicalMaterial, PlaneBufferGeometry, SphereGeometry, Vector3 } from '../vendor/three.module.js';
 import * as Render from './render3d.js';
 import * as ImageLoader from './ImageLoader.js';
 
@@ -16,7 +16,7 @@ export default class Blob {
         this.arms = this.initArms(16);
 
         this.bodyGeometry = new SphereGeometry(5);
-        const material = new MeshBasicMaterial({color: '#ff0000', map: ImageLoader.get('arm')});
+        const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('arm')});
         // const material = new MeshPhysicalMaterial({color: '#ff0000'});
         this.bodyMesh = new Mesh(this.bodyGeometry, material);
         Render.add(this.bodyMesh);
@@ -74,6 +74,7 @@ class Arm {
         this.length = this.baseLength;
         this.baseWidth = Utils.randomize(10, 5);
         this.width = this.baseWidth;
+        this.color = new Color(Utils.random(0.7, 1), 0, 0);
 
         this.segmentsCount = 10;
         // this.segmentsCount = 5;
@@ -90,21 +91,65 @@ class Arm {
         // this.color = `rgb(${Utils.random(200, 255)}, 0, 0)`;
         this.hsl = [1, Utils.random(35, 80), 40];
         const rgb = Utils.hslToRgb(1, Utils.random(35, 80), 40);
-        this.color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+        // this.color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
         this.eyeClosed = true;
         this.direction = [0, 0];
         this.softness = Utils.randomize(4, 2) / this.baseWidth;
 
         this.segments = this.buildSegments();
 
-        this.meshFaces = this.#buildMeshFace(this.segmentsCount);
-        Render.add(this.meshFaces);
+        this.meshSegments = this.#buildMeshFace(this.segmentsCount);
+        Render.add(this.meshSegments);
+        this.meshStraight = this.#buildMeshStraight();
+        Render.add(this.meshStraight);
+    }
+
+    #buildMeshStraight() {
+        const material = new MeshBasicMaterial({
+            color: 0xcc0000,
+            transparent: true,
+            alphaMap: ImageLoader.get('arm-alpha'),
+        });
+        const z = 2;
+        const positions = [
+            0, 0, z,
+            0, 0, z,
+            0, 0, z,
+            0, 0, z,
+        ];
+        const uv = [
+            0, 0,
+            1, 0,
+            1, 1,
+            0, 1,
+        ];
+        const facesIndex = [
+            3,
+            0,
+            1,
+
+            3,
+            1,
+            2,
+        ];
+
+        const vertices = new Float32Array(positions);
+        const geometry = new BufferGeometry();
+        geometry.setIndex(facesIndex);
+        geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
+        geometry.computeVertexNormals();
+        geometry.normalizeNormals();
+
+        return new Mesh(geometry, material);
     }
 
     #buildMeshFace(segmentsCount) {
         // const material = new MeshBasicMaterial({color: 0xffffff, map: ImageLoader.get('arm-alpha')});
+        
         const material = new MeshBasicMaterial({
-            color: 0xff0000,
+            // color: 0xff0000,
+            color: this.color,
             transparent: true,
             alphaMap: ImageLoader.get('arm-alpha'),
         });
@@ -165,9 +210,9 @@ class Arm {
     }
 
     updagesegmentsVertices() {
-        let uvAttribute = this.meshFaces.geometry.attributes.uv;
+        let uvAttribute = this.meshSegments.geometry.attributes.uv;
         let uvValues = uvAttribute.array;
-        let positionAttributeFace = this.meshFaces.geometry.attributes.position;
+        let positionAttributeFace = this.meshSegments.geometry.attributes.position;
         let positionsFace = positionAttributeFace.array;
 
         for (let i = 0; i < this.segmentsCount + 0; i ++) {
@@ -208,10 +253,39 @@ class Arm {
             }
         }
 
+        
         positionAttributeFace.needsUpdate = true;
         uvAttribute.needsUpdate = true;
 
-        this.meshFaces.geometry.computeVertexNormals();
+        this.meshSegments.geometry.computeVertexNormals();
+
+
+
+
+        let positionAttributeStraight = this.meshStraight.geometry.attributes.position;
+        let positionsStraight = positionAttributeStraight.array;
+        const faceWidth = Math.max(0.4, this.segments[0].width * 0.3);
+
+        const startX = this.segments[0].start.x;
+        const startY = this.segments[0].start.y;
+        const endX = this.segments[this.segmentsCount - 1].end.x;
+        const endY = this.segments[this.segmentsCount - 1].end.y;
+        const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
+        const borderAngle = directionAngle * -1 - Math.PI * 2;
+
+        const offsetX = Math.sin(borderAngle) * faceWidth;
+        const offsetY = Math.cos(borderAngle) * faceWidth;
+
+        positionsStraight[0] = startX + offsetX;
+        positionsStraight[1] = startY + offsetY;
+        positionsStraight[3] = startX - offsetX;
+        positionsStraight[4] = startY - offsetY;
+        positionsStraight[6] = endX - offsetX;
+        positionsStraight[7] = endY - offsetY;
+        positionsStraight[9] = endX + offsetX;
+        positionsStraight[10] = endY + offsetY;
+
+        positionAttributeStraight.needsUpdate = true;
     }
 
     onFrame(posX, posY) {

@@ -16,6 +16,10 @@ export function init() {
 			id: 'arm-alpha',
 			url: './assets/arm-alpha.png'
 		},
+		{
+			id: 'eye',
+			url: './assets/eye.png'
+		},
 	]).then(res => {
 		Render.init('viewport');
 		UiMouse.init('viewport');
