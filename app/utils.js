@@ -46,6 +46,14 @@ export function randomize(value, radius) {
     return value + (Math.random() * amplitude) - radius;
 }
 
+export function randomElement(collection) {
+    if (collection.length === 0) {
+		return null;
+	}
+    const index = Math.floor(Math.random() * collection.length);
+    return collection[index];
+}
+
 export function lerpFloat(valueA, valueB, percent) {
     const distance = valueB - valueA;
     const value = valueA + (distance * percent);

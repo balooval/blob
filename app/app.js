@@ -3,6 +3,8 @@ import * as Render from './render3d.js';
 import * as UiMouse from './uiMouse.js';
 import * as ImageLoader from './ImageLoader.js';
 import * as Map from './map.js';
+import * as Stain from './stain.js';
+import * as Splats from './splats.js';
 
 let blob;
 
@@ -34,5 +36,7 @@ export function init() {
 function onFrame() {
 	Render.draw();
 	blob.onFrame();
+	Stain.onFrame();
+	Splats.onFrame();
 	requestAnimationFrame(onFrame);
 }

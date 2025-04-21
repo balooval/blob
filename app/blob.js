@@ -15,10 +15,12 @@ export default class Blob {
         // this.arms = this.initArms(4);
         this.arms = this.initArms(16);
 
-        this.bodyGeometry = new SphereGeometry(5);
-        const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('arm')});
+        this.bodyGeometry = new SphereGeometry(20);
+        const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('eye')});
+        // const material = new MeshBasicMaterial({color: '#AA0000'});
         // const material = new MeshPhysicalMaterial({color: '#ff0000'});
         this.bodyMesh = new Mesh(this.bodyGeometry, material);
+        this.bodyMesh.rotation.y = Math.PI * -0.5;
         Render.add(this.bodyMesh);
     }
 
@@ -38,7 +40,7 @@ export default class Blob {
         const armsSize = this.arms.map(arm => arm.length).reduce((prev, cum) => prev + cum);
         this.size = (2000 - armsSize) / 50;
         
-        this.bodyMesh.scale.x = this.bodyMesh.scale.y = this.bodyMesh.scale.z = this.size * 0.1;
+        // this.bodyMesh.scale.x = this.bodyMesh.scale.y = this.bodyMesh.scale.z = this.size * 0.05;
     }
 
     initArms(count) {
@@ -74,7 +76,7 @@ class Arm {
         this.length = this.baseLength;
         this.baseWidth = Utils.randomize(10, 5);
         this.width = this.baseWidth;
-        this.color = new Color(Utils.random(0.7, 1), 0, 0);
+        this.color = new Color(Utils.random(0.8, 1), 0, 0);
 
         this.segmentsCount = 10;
         // this.segmentsCount = 5;
@@ -106,7 +108,7 @@ class Arm {
 
     #buildMeshStraight() {
         const material = new MeshBasicMaterial({
-            color: 0xcc0000,
+            color: 0xCC0000,
             transparent: true,
             alphaMap: ImageLoader.get('arm-alpha'),
         });
@@ -219,9 +221,8 @@ class Arm {
             let indexFace = i * 6;
             let indexUv = i * 4;
             
-            // const faceWidth = this.segments[i].width * 0.3;
-            const faceWidth = Math.max(0.4, Math.round(this.segments[i].width * 0.5));
-            // const faceWidth = Math.max(0.5, this.segments[i].width * 0.2);
+            // const faceWidth = Math.max(0.4, this.segments[i].width / (1 + (i * 0.1)));
+            const faceWidth = Math.max(0.15, Math.round(this.segments[i].width * 0.6));
 
             const startX = this.segments[i].start.x;
             const startY = this.segments[i].start.y;
@@ -240,8 +241,8 @@ class Arm {
             positionsFace[indexFace + 3] = startX + offsetX;
             positionsFace[indexFace + 4] = startY + offsetY;
 
-            uvValues[indexUv + 1] = i * 0.8 - this.time * 0.03;
-            uvValues[indexUv + 3] = i * 0.8 - this.time * 0.03;
+            uvValues[indexUv + 1] = i * 0.8 + Math.abs(this.time) * 0.03;
+            uvValues[indexUv + 3] = i * 0.8 + Math.abs(this.time) * 0.03;
 
             if (i === this.segmentsCount - 1) {
                 indexFace += 6;
@@ -264,7 +265,8 @@ class Arm {
 
         let positionAttributeStraight = this.meshStraight.geometry.attributes.position;
         let positionsStraight = positionAttributeStraight.array;
-        const faceWidth = Math.max(0.4, this.segments[0].width * 0.3);
+        const startWidth = Math.max(0.3, this.segments[0].width * 0.2);
+        const endWidth = Math.max(0.3, this.segments[this.segmentsCount - 1].width * 0.3);
 
         const startX = this.segments[0].start.x;
         const startY = this.segments[0].start.y;
@@ -273,17 +275,21 @@ class Arm {
         const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
         const borderAngle = directionAngle * -1 - Math.PI * 2;
 
-        const offsetX = Math.sin(borderAngle) * faceWidth;
-        const offsetY = Math.cos(borderAngle) * faceWidth;
+        const sin = Math.sin(borderAngle);
+        const cos = Math.cos(borderAngle);
+        const startOffsetX = sin * startWidth;
+        const startOffsetY = cos * startWidth;
+        const endOffsetX = sin * endWidth;
+        const endOffsetY = cos * endWidth;
 
-        positionsStraight[0] = startX + offsetX;
-        positionsStraight[1] = startY + offsetY;
-        positionsStraight[3] = startX - offsetX;
-        positionsStraight[4] = startY - offsetY;
-        positionsStraight[6] = endX - offsetX;
-        positionsStraight[7] = endY - offsetY;
-        positionsStraight[9] = endX + offsetX;
-        positionsStraight[10] = endY + offsetY;
+        positionsStraight[0] = startX + startOffsetX;
+        positionsStraight[1] = startY + startOffsetY;
+        positionsStraight[3] = startX - startOffsetX;
+        positionsStraight[4] = startY - startOffsetY;
+        positionsStraight[6] = endX - endOffsetX;
+        positionsStraight[7] = endY - endOffsetY;
+        positionsStraight[9] = endX + endOffsetX;
+        positionsStraight[10] = endY + endOffsetY;
 
         positionAttributeStraight.needsUpdate = true;
     }
@@ -409,7 +415,6 @@ class Arm {
         const distance = Utils.distance({x: this.posX, y: this.posY}, this.wallPoint.intersection);
 
         if (distance > this.maxLength) {
-            console.log('A');
             this.state = Arm.#STATE_RETRACT;
             return;
         }
@@ -525,6 +530,9 @@ class Arm {
         let previousPos = [this.posX, this.posY];
         
         let ecart = 0;
+        let distanceWidth = 1;
+        const widthStep = Math.PI / this.segmentsCount;
+
         
         for (let i = 0; i < this.segmentsCount; i ++) {
             const test = 1 + (Math.tan(i * percentStep) * 2);
@@ -545,7 +553,14 @@ class Arm {
             
             waveFactor *= waveReduction;
             
-            const width = Math.max(1, (this.width * 2) / test);
+            // const width = Math.max(1, (this.width * 2) / test);
+
+            let segmentWidthFactor = Math.abs(Math.cos(widthStep * i)) + 0.5;
+            segmentWidthFactor *= distanceWidth;
+            segmentWidthFactor *= 2;
+            distanceWidth *= 0.8;
+            
+            const width = Math.min(segmentWidthFactor * this.width, 15);
 
             res.push({
                 start: {
