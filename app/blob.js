@@ -12,34 +12,71 @@ export default class Blob {
         this.size = 50;
         this.posX = 200;
         this.posY = 150;
+        this.translation = [0, 0];
+        this.moveAngle = 0;
         // this.arms = this.initArms(4);
         this.arms = this.initArms(16);
+        this.time = 0;
 
         this.bodyGeometry = new SphereGeometry(20);
         const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('eye')});
         // const material = new MeshBasicMaterial({color: '#AA0000'});
         // const material = new MeshPhysicalMaterial({color: '#ff0000'});
         this.bodyMesh = new Mesh(this.bodyGeometry, material);
-        this.bodyMesh.rotation.y = Math.PI * -0.5;
         Render.add(this.bodyMesh);
+
+        this.eyes = this.#buidEyes(8);
+    }
+
+    #buidEyes(eyesCount) {
+        const eyes = [];
+        const angleStep = (Math.PI * 2) / eyesCount;
+
+        for (let i = 0; i < eyesCount; i ++) {
+            const angle = angleStep * i;
+            const eye = new Eye(this, angle);
+            eyes.push(eye);
+        }
+
+        return eyes;
     }
 
     onFrame() {
+        this.time ++;
+
+        const lastPosX = this.posX;
+        const lastPosY = this.posY;
+
         this.posX = UiMouse.worldPosition[0];
         this.posY = UiMouse.worldPosition[1];
 
         this.bodyMesh.position.x = this.posX;
         this.bodyMesh.position.y = this.posY;
 
+        this.translation[0] = this.posX - lastPosX;
+        this.translation[1] = this.posY - lastPosY;
+        
+        
+        this.moveAngle = Math.atan2(this.translation[1], this.translation[0]);
+        if (Math.abs(this.translation[0]) + Math.abs(this.translation[1]) === 0) {
+            this.moveAngle = 0;
+        }
+
         this.arms.map(arm => arm.onFrame(this.posX, this.posY));
 
-        this.updateSize();
+        this.#updateSize();
+        this.#updateEyes();
     }
 
-    updateSize() {
+    #updateEyes() {
+        this.eyes.forEach(eye => {
+            eye.onFrame();
+        });
+    }
+
+    #updateSize() {
         const armsSize = this.arms.map(arm => arm.length).reduce((prev, cum) => prev + cum);
         this.size = (2000 - armsSize) / 50;
-        
         // this.bodyMesh.scale.x = this.bodyMesh.scale.y = this.bodyMesh.scale.z = this.size * 0.05;
     }
 
@@ -52,6 +89,54 @@ export default class Blob {
         }
 
         return arms;
+    }
+}
+
+class Eye {
+    static eyeGeometry = new SphereGeometry(10);
+    // static material = new MeshBasicMaterial({color: '#00ff00'});
+    static material = new MeshBasicMaterial({color: '#ffffff'});
+
+    constructor(blob, angle) {
+        Eye.material.map = ImageLoader.get('eye');
+
+        this.blob = blob;
+        this.angle = angle;
+        this.time = 0;
+        this.timeDirection = Utils.random(-0.1, 0.1);
+        this.size = Utils.random(0.8, 1.2);
+
+        this.lookAtX = 0;
+        this.lookAtY = 0;
+
+        this.radius = Utils.random(10, 20);
+        this.eyeMesh = new Mesh(Eye.eyeGeometry, Eye.material);
+        this.eyeMesh.scale.x = this.eyeMesh.scale.y = this.eyeMesh.scale.z = this.size;
+        // this.eyeMesh.rotation.y = Math.PI * -0.5;
+        Render.add(this.eyeMesh);
+    }
+
+    onFrame() {
+        // this.lookAtX *= 0.95;
+        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translation[0], 0.05);
+        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translation[1], 0.05);
+        // console.log(Math.round(this.lookAtX * 1000) / 1000);
+        
+        
+        this.time += this.timeDirection * 0.05;
+        // this.time += Utils.random(-0.05, 0.05);
+
+        const angle = this.angle + this.time;
+        const posX = this.blob.posX + Math.cos(angle) * this.radius;
+        const posY = this.blob.posY + Math.sin(angle) * this.radius;
+        this.eyeMesh.position.x = posX;
+        this.eyeMesh.position.y = posY;
+        this.eyeMesh.position.z = 10;
+        this.eyeMesh.lookAt(
+            posX + this.lookAtX * 50, //(this.blob.translation[0] * 100),
+            posY + this.lookAtY * 50, //(this.blob.translation[0] * 100),
+            100
+        );
     }
 }
 
@@ -161,7 +246,7 @@ class Arm {
         const positions = [];
         const normals = [];
         const uv = [];
-        const z = 5;
+        const z = Utils.random(5, 15);
         const uvStep = 1 / segmentsCount;
         
         for (let i = 0; i < segmentsCount + 1; i ++) {

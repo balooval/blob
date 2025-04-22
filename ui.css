@@ -5,11 +5,11 @@
 
 body {
     background-color: #000;
-    
 }
 
-#main{
+#viewport {
     /* flex-grow: 1; */
+    cursor: none;
 }
 
 #main {
