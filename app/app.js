@@ -5,6 +5,7 @@ import * as ImageLoader from './ImageLoader.js';
 import * as Map from './map.js';
 import * as Stain from './stain.js';
 import * as Splats from './splats.js';
+import * as Keyboard from './keyboard.js';
 
 let blob;
 
@@ -30,9 +31,11 @@ export function init() {
 			id: 'eye',
 			url: './assets/eye.png'
 		},
+		
 	]).then(res => {
 		Render.init('viewport');
 		UiMouse.init('viewport');
+		Keyboard.init();
 
 		const wallsMesh = Map.buildMesh();
 		Render.add(wallsMesh);

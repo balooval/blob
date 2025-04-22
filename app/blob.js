@@ -3,6 +3,7 @@ import * as Utils from './utils.js';
 import * as Map from './map.js';
 import * as Stains from './stain.js';
 import * as Splats from './splats.js';
+import * as Keyboard from './keyboard.js';
 import {
     BufferAttribute,
     BufferGeometry,
@@ -10,6 +11,7 @@ import {
     Mesh,
     MeshBasicMaterial,
     SphereGeometry,
+    Vector2,
 } from '../vendor/three.module.js';
 import * as Render from './render3d.js';
 import * as ImageLoader from './ImageLoader.js';
@@ -18,7 +20,7 @@ export default class Blob {
     constructor() {
         this.size = 50;
         this.posX = 200;
-        this.posY = 150;
+        this.posY = 160;
         this.translation = [0, 0];
         this.moveAngle = 0;
         // this.arms = this.initArms(4);
@@ -31,7 +33,59 @@ export default class Blob {
         Render.add(this.bodyMesh);
 
         this.eyes = this.#buidEyes(6);
+
+        Keyboard.evt.addEventListener('DOWN', this, this.onKeyDown);
+        Keyboard.evt.addEventListener('UP', this, this.onKeyUp);
+
+        this.inputMoves = {
+			left: 0,
+			right: 0,
+			up: 0,
+			down: 0,
+		};
     }
+
+    onKeyDown(code) {
+		switch (code) {
+			case 'LEFT':
+			case 'Q':
+				this.inputMoves.left = 1;
+			break;
+			case 'RIGHT':
+			case 'D':
+				this.inputMoves.right = 1;
+			break;
+			case 'DOWN':
+			case 'S':
+				this.inputMoves.down = 1;
+			break;
+			case 'UP':
+			case 'Z':
+				this.inputMoves.up = 1;
+			break;
+		}
+	}
+
+    onKeyUp(code) {
+		switch (code) {
+			case 'LEFT':
+			case 'Q':
+				this.inputMoves.left = 0;
+			break;
+			case 'RIGHT':
+			case 'D':
+				this.inputMoves.right = 0;
+			break;
+			case 'DOWN':
+			case 'S':
+				this.inputMoves.down = 0;
+			break;
+			case 'UP':
+			case 'Z':
+				this.inputMoves.up = 0;
+			break;
+		}
+	}
 
     #buidEyes(eyesCount) {
         const eyes = [];
@@ -49,18 +103,21 @@ export default class Blob {
     onFrame() {
         this.time ++;
 
+        const translationVector = this.#moveFromKeyboard();
+
         const lastPosX = this.posX;
         const lastPosY = this.posY;
 
-        this.posX = UiMouse.worldPosition[0];
-        this.posY = UiMouse.worldPosition[1];
+        this.posX += translationVector.x;
+        this.posY += translationVector.y;
+        // this.posX = UiMouse.worldPosition[0];
+        // this.posY = UiMouse.worldPosition[1];
 
         this.bodyMesh.position.x = this.posX;
         this.bodyMesh.position.y = this.posY;
 
         this.translation[0] = this.posX - lastPosX;
         this.translation[1] = this.posY - lastPosY;
-        
         
         this.moveAngle = Math.atan2(this.translation[1], this.translation[0]);
         if (Math.abs(this.translation[0]) + Math.abs(this.translation[1]) === 0) {
@@ -71,6 +128,22 @@ export default class Blob {
 
         this.#updateSize();
         this.#updateEyes();
+    }
+
+    #moveFromKeyboard() {
+        const directionX = this.inputMoves.right - this.inputMoves.left;
+		const directionY = this.inputMoves.up - this.inputMoves.down;
+        
+        if (directionX === 0 && directionY === 0) {
+            return new Vector2(0, 0);
+        }
+
+        const moveVector = new Vector2(directionX, directionY);
+
+        const forces = this.arms.map(arm => arm.getAttractForce(moveVector));
+        const total = Utils.addNumbers(forces);
+
+        return moveVector.multiplyScalar(total);
     }
 
     #updateEyes() {
@@ -97,47 +170,6 @@ export default class Blob {
     }
 }
 
-class Eye {
-    static eyeGeometry = new SphereGeometry(10);
-    static material = new MeshBasicMaterial({color: '#ffffff'});
-
-    constructor(blob, angle) {
-        Eye.material.map = ImageLoader.get('eye');
-
-        this.blob = blob;
-        this.angle = angle;
-        this.time = 0;
-        this.timeDirection = Utils.random(-0.1, 0.1);
-        this.size = Utils.random(0.8, 1.2);
-
-        this.lookAtX = 0;
-        this.lookAtY = 0;
-
-        this.radius = Utils.random(10, 20);
-        this.eyeMesh = new Mesh(Eye.eyeGeometry, Eye.material);
-        this.eyeMesh.scale.x = this.eyeMesh.scale.y = this.eyeMesh.scale.z = this.size;
-        Render.add(this.eyeMesh);
-    }
-
-    onFrame() {
-        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translation[0], 0.05);
-        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translation[1], 0.05);
-        
-        this.time += this.timeDirection * 0.05;
-
-        const angle = this.angle + this.time;
-        const posX = this.blob.posX + Math.cos(angle) * this.radius;
-        const posY = this.blob.posY + Math.sin(angle) * this.radius;
-        this.eyeMesh.position.x = posX;
-        this.eyeMesh.position.y = posY;
-        this.eyeMesh.position.z = 10;
-        this.eyeMesh.lookAt(
-            posX + this.lookAtX * 50,
-            posY + this.lookAtY * 50,
-            100
-        );
-    }
-}
 
 class Arm {
     static #STATE_IDLE = 'STATE_IDLE';
@@ -161,6 +193,8 @@ class Arm {
         this.baseWidth = Utils.randomize(10, 5);
         this.width = this.baseWidth;
         this.color = new Color(Utils.random(0.8, 1), 0, 0);
+
+        this.attractDirection = new Vector2();
 
         this.segmentsCount = 10;
         // this.segmentsCount = 5;
@@ -186,179 +220,12 @@ class Arm {
         Render.add(this.meshStraight);
     }
 
-    #buildMeshStraight() {
-        const material = new MeshBasicMaterial({
-            color: 0xCC0000,
-            transparent: true,
-            alphaMap: ImageLoader.get('arm-alpha'),
-        });
-        const z = 2;
-        const positions = [
-            0, 0, z,
-            0, 0, z,
-            0, 0, z,
-            0, 0, z,
-        ];
-        const uv = [
-            0, 0,
-            1, 0,
-            1, 1,
-            0, 1,
-        ];
-        const facesIndex = [
-            3,
-            0,
-            1,
-
-            3,
-            1,
-            2,
-        ];
-
-        const vertices = new Float32Array(positions);
-        const geometry = new BufferGeometry();
-        geometry.setIndex(facesIndex);
-        geometry.setAttribute('position', new BufferAttribute(vertices, 3));
-        geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
-        geometry.computeVertexNormals();
-        geometry.normalizeNormals();
-
-        return new Mesh(geometry, material);
-    }
-
-    #buildMeshFace(segmentsCount) {
-        const material = new MeshBasicMaterial({
-            color: 0xff0000,
-            map: ImageLoader.get('test'),
-        });
-        let index = 0;
-        const facesIndex = [];
-        const positions = [];
-        const normals = [];
-        const uv = [];
-        const z = Utils.random(5, 15);
-        const uvStep = 1 / segmentsCount;
-        
-        for (let i = 0; i < segmentsCount + 1; i ++) {
-            positions.push(
-                0, 0, z,
-                0, 0, z,
-            );
-            normals.push(
-                0.5, 0, 0.5,
-                -0.5, 0, 0.5,
-            );
-            uv.push(
-                0, i * 0.1,
-                1, i * 0.1,
-            );
+    getAttractForce(moveVector) {
+        if (this.state !== Arm.#STATE_STUCKED) {
+            return 0;
         }
 
-        index = 0;
-
-        for (let i = 0; i < segmentsCount; i ++) {
-            facesIndex.push(
-                index + 1,
-                index + 0,
-                index + 2,
-
-                index + 2,
-                index + 3,
-                index + 1,
-            )
-            index += 2;
-        }
-
-        const vertices = new Float32Array(positions);
-
-        const geometry = new BufferGeometry();
-        geometry.setIndex(facesIndex);
-        geometry.setAttribute('position', new BufferAttribute(vertices, 3));
-        geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
-        geometry.computeVertexNormals();
-        geometry.normalizeNormals();
-
-        return new Mesh(geometry, material);
-    }
-
-    updagesegmentsVertices() {
-        let uvAttribute = this.meshSegments.geometry.attributes.uv;
-        let uvValues = uvAttribute.array;
-        let positionAttributeFace = this.meshSegments.geometry.attributes.position;
-        let positionsFace = positionAttributeFace.array;
-
-        for (let i = 0; i < this.segmentsCount + 0; i ++) {
-            let indexFace = i * 6;
-            let indexUv = i * 4;
-            
-            const faceWidth = Math.max(0.15, Math.round(this.segments[i].width * 0.6));
-
-            const startX = this.segments[i].start.x;
-            const startY = this.segments[i].start.y;
-            const endX = this.segments[i].end.x;
-            const endY = this.segments[i].end.y;
-            const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
-            const borderAngle = directionAngle * -1 - Math.PI * 2;
-
-            const offsetX = Math.sin(borderAngle) * faceWidth;
-            const offsetY = Math.cos(borderAngle) * faceWidth;
-
-            positionsFace[indexFace + 0] = startX - offsetX;
-            positionsFace[indexFace + 1] = startY - offsetY;
-
-            positionsFace[indexFace + 3] = startX + offsetX;
-            positionsFace[indexFace + 4] = startY + offsetY;
-
-            uvValues[indexUv + 1] = i * 0.1 + Math.abs(this.time) * 0.05;
-            uvValues[indexUv + 3] = i * 0.1 + Math.abs(this.time) * 0.05;
-
-            if (i === this.segmentsCount - 1) {
-                indexFace += 6;
-                positionsFace[indexFace + 0] = endX - offsetX;
-                positionsFace[indexFace + 1] = endY - offsetY;
-
-                positionsFace[indexFace + 3] = endX + offsetX;
-                positionsFace[indexFace + 4] = endY + offsetY;
-            }
-        }
-
-        
-        positionAttributeFace.needsUpdate = true;
-        uvAttribute.needsUpdate = true;
-
-        this.meshSegments.geometry.computeVertexNormals();
-
-
-
-        let positionAttributeStraight = this.meshStraight.geometry.attributes.position;
-        let positionsStraight = positionAttributeStraight.array;
-        const startWidth = Math.max(0.3, this.segments[0].width * 0.2);
-        const endWidth = Math.max(0.3, this.segments[this.segmentsCount - 1].width * 0.3);
-
-        const startX = this.segments[0].start.x;
-        const startY = this.segments[0].start.y;
-        const endX = this.segments[this.segmentsCount - 1].end.x;
-        const endY = this.segments[this.segmentsCount - 1].end.y;
-        const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
-        const borderAngle = directionAngle * -1 - Math.PI * 2;
-
-        const sin = Math.sin(borderAngle);
-        const cos = Math.cos(borderAngle);
-        const startOffsetX = sin * startWidth;
-        const startOffsetY = cos * startWidth;
-        const endOffsetX = sin * endWidth;
-        const endOffsetY = cos * endWidth;
-
-        positionsStraight[0] = startX + startOffsetX;
-        positionsStraight[1] = startY + startOffsetY;
-        positionsStraight[3] = startX - startOffsetX;
-        positionsStraight[4] = startY - startOffsetY;
-        positionsStraight[6] = endX - endOffsetX;
-        positionsStraight[7] = endY - endOffsetY;
-        positionsStraight[9] = endX + endOffsetX;
-        positionsStraight[10] = endY + endOffsetY;
-
-        positionAttributeStraight.needsUpdate = true;
+        return Math.max(0, this.attractDirection.dot(moveVector));
     }
 
     onFrame(posX, posY) {
@@ -417,6 +284,9 @@ class Arm {
     updateStuckState() {
         this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
         this.angle = Utils.pointsAngle([this.posX, this.posY], [this.targetPosX, this.targetPosY]);
+
+        this.attractDirection.x = Math.cos(this.angle);
+        this.attractDirection.y = Math.sin(this.angle);
 
         if (this.mustQuiStuck() === true) {
             this.isStuck = false;
@@ -638,5 +508,223 @@ class Arm {
         }
 
         return res;
+    }
+
+    #buildMeshStraight() {
+        const material = new MeshBasicMaterial({
+            color: 0xCC0000,
+            transparent: true,
+            alphaMap: ImageLoader.get('arm-alpha'),
+        });
+        const z = 2;
+        const positions = [
+            0, 0, z,
+            0, 0, z,
+            0, 0, z,
+            0, 0, z,
+        ];
+        const uv = [
+            0, 0,
+            1, 0,
+            1, 1,
+            0, 1,
+        ];
+        const facesIndex = [
+            3,
+            0,
+            1,
+
+            3,
+            1,
+            2,
+        ];
+
+        const vertices = new Float32Array(positions);
+        const geometry = new BufferGeometry();
+        geometry.setIndex(facesIndex);
+        geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
+        geometry.computeVertexNormals();
+        geometry.normalizeNormals();
+
+        return new Mesh(geometry, material);
+    }
+
+    #buildMeshFace(segmentsCount) {
+        const material = new MeshBasicMaterial({
+            color: 0xff0000,
+            map: ImageLoader.get('test'),
+        });
+        let index = 0;
+        const facesIndex = [];
+        const positions = [];
+        const normals = [];
+        const uv = [];
+        const z = Utils.random(5, 15);
+        const uvStep = 1 / segmentsCount;
+        
+        for (let i = 0; i < segmentsCount + 1; i ++) {
+            positions.push(
+                0, 0, z,
+                0, 0, z,
+            );
+            normals.push(
+                0.5, 0, 0.5,
+                -0.5, 0, 0.5,
+            );
+            uv.push(
+                0, i * 0.1,
+                1, i * 0.1,
+            );
+        }
+
+        index = 0;
+
+        for (let i = 0; i < segmentsCount; i ++) {
+            facesIndex.push(
+                index + 1,
+                index + 0,
+                index + 2,
+
+                index + 2,
+                index + 3,
+                index + 1,
+            )
+            index += 2;
+        }
+
+        const vertices = new Float32Array(positions);
+
+        const geometry = new BufferGeometry();
+        geometry.setIndex(facesIndex);
+        geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
+        geometry.computeVertexNormals();
+        geometry.normalizeNormals();
+
+        return new Mesh(geometry, material);
+    }
+
+    updagesegmentsVertices() {
+        let uvAttribute = this.meshSegments.geometry.attributes.uv;
+        let uvValues = uvAttribute.array;
+        let positionAttributeFace = this.meshSegments.geometry.attributes.position;
+        let positionsFace = positionAttributeFace.array;
+
+        for (let i = 0; i < this.segmentsCount + 0; i ++) {
+            let indexFace = i * 6;
+            let indexUv = i * 4;
+            
+            const faceWidth = Math.max(0.15, Math.round(this.segments[i].width * 0.6));
+
+            const startX = this.segments[i].start.x;
+            const startY = this.segments[i].start.y;
+            const endX = this.segments[i].end.x;
+            const endY = this.segments[i].end.y;
+            const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
+            const borderAngle = directionAngle * -1 - Math.PI * 2;
+
+            const offsetX = Math.sin(borderAngle) * faceWidth;
+            const offsetY = Math.cos(borderAngle) * faceWidth;
+
+            positionsFace[indexFace + 0] = startX - offsetX;
+            positionsFace[indexFace + 1] = startY - offsetY;
+
+            positionsFace[indexFace + 3] = startX + offsetX;
+            positionsFace[indexFace + 4] = startY + offsetY;
+
+            uvValues[indexUv + 1] = i * 0.1 + Math.abs(this.time) * 0.05;
+            uvValues[indexUv + 3] = i * 0.1 + Math.abs(this.time) * 0.05;
+
+            if (i === this.segmentsCount - 1) {
+                indexFace += 6;
+                positionsFace[indexFace + 0] = endX - offsetX;
+                positionsFace[indexFace + 1] = endY - offsetY;
+
+                positionsFace[indexFace + 3] = endX + offsetX;
+                positionsFace[indexFace + 4] = endY + offsetY;
+            }
+        }
+
+        
+        positionAttributeFace.needsUpdate = true;
+        uvAttribute.needsUpdate = true;
+
+        this.meshSegments.geometry.computeVertexNormals();
+
+
+
+        let positionAttributeStraight = this.meshStraight.geometry.attributes.position;
+        let positionsStraight = positionAttributeStraight.array;
+        const startWidth = Math.max(0.3, this.segments[0].width * 0.2);
+        const endWidth = Math.max(0.3, this.segments[this.segmentsCount - 1].width * 0.3);
+
+        const startX = this.segments[0].start.x;
+        const startY = this.segments[0].start.y;
+        const endX = this.segments[this.segmentsCount - 1].end.x;
+        const endY = this.segments[this.segmentsCount - 1].end.y;
+        const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
+        const borderAngle = directionAngle * -1 - Math.PI * 2;
+
+        const sin = Math.sin(borderAngle);
+        const cos = Math.cos(borderAngle);
+        const startOffsetX = sin * startWidth;
+        const startOffsetY = cos * startWidth;
+        const endOffsetX = sin * endWidth;
+        const endOffsetY = cos * endWidth;
+
+        positionsStraight[0] = startX + startOffsetX;
+        positionsStraight[1] = startY + startOffsetY;
+        positionsStraight[3] = startX - startOffsetX;
+        positionsStraight[4] = startY - startOffsetY;
+        positionsStraight[6] = endX - endOffsetX;
+        positionsStraight[7] = endY - endOffsetY;
+        positionsStraight[9] = endX + endOffsetX;
+        positionsStraight[10] = endY + endOffsetY;
+
+        positionAttributeStraight.needsUpdate = true;
+    }
+}
+
+
+class Eye {
+    static eyeGeometry = new SphereGeometry(10);
+    static material = new MeshBasicMaterial({color: '#ffffff'});
+
+    constructor(blob, angle) {
+        Eye.material.map = ImageLoader.get('eye');
+
+        this.blob = blob;
+        this.angle = angle;
+        this.time = 0;
+        this.timeDirection = Utils.random(-0.1, 0.1);
+        this.size = Utils.random(0.8, 1.2);
+
+        this.lookAtX = 0;
+        this.lookAtY = 0;
+
+        this.radius = Utils.random(10, 20);
+        this.eyeMesh = new Mesh(Eye.eyeGeometry, Eye.material);
+        this.eyeMesh.scale.x = this.eyeMesh.scale.y = this.eyeMesh.scale.z = this.size;
+        Render.add(this.eyeMesh);
+    }
+
+    onFrame() {
+        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translation[0], 0.05);
+        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translation[1], 0.05);
+        
+        this.time += this.timeDirection * 0.05;
+
+        const angle = this.angle + this.time;
+        const posX = this.blob.posX + Math.cos(angle) * this.radius;
+        const posY = this.blob.posY + Math.sin(angle) * this.radius;
+        this.eyeMesh.position.x = posX;
+        this.eyeMesh.position.y = posY;
+        this.eyeMesh.position.z = 10;
+        this.eyeMesh.lookAt(
+            posX + this.lookAtX * 50,
+            posY + this.lookAtY * 50,
+            100
+        );
     }
 }

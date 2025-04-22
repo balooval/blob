@@ -25,6 +25,10 @@ function distToSegmentSquared(p, v, w) {
     );
 }
 
+export function addNumbers(numbers) {
+    return numbers.reduce((value, sum) => sum + value, 0);
+}
+
 export function length(sX, sY, dX, dY) {
     Math.sqrt(sqr(sX - dX) + sqr(sY - dY));
 }
