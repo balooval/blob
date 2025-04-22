@@ -3,6 +3,7 @@ import * as Renderer from './render3d.js';
 import * as Utils from './utils.js';
 
 let splats = [];
+const pool = [];
 const gravity = 0.05;
 const geometry = new CircleBufferGeometry(4, 8);
 const materials = [
@@ -15,12 +16,8 @@ export function add(posX, posY, dirX, dirY) {
     const count = Utils.random(2, 5);
 
     for (let i = 0; i < count; i ++) {
-        const mesh = new Mesh(geometry, Utils.randomElement(materials));
-        const size = Utils.randomize(3, 2);
-        mesh.scale.x = mesh.scale.y = mesh.scale.z = size;
-        mesh.position.x = Utils.randomize(posX, 5);
-        mesh.position.y = Utils.randomize(posY, 5);
-        mesh.position.z = 2;
+        const mesh = getCachedSplat();
+        resetSplat(mesh, posX, posY);
         Renderer.add(mesh);
 
         splats.push({
@@ -57,5 +54,28 @@ function removeSplatIfNeeded(splat) {
     }
 
     Renderer.scene.remove(splat.mesh);
+    pool.push(splat.mesh);
+    
     return false;
+}
+
+function getCachedSplat() {
+    if (pool.length === 0) {
+        return createSplat();
+    }
+
+    return pool.pop();
+}
+
+function createSplat() {
+    const mesh = new Mesh(geometry, Utils.randomElement(materials));
+    return mesh;
+}
+
+function resetSplat(mesh, posX, posY) {
+    const size = Utils.randomize(3, 2);
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = size;
+    mesh.position.x = Utils.randomize(posX, 5);
+    mesh.position.y = Utils.randomize(posY, 5);
+    mesh.position.z = 2;
 }

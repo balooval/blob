@@ -3,7 +3,14 @@ import * as Utils from './utils.js';
 import * as Map from './map.js';
 import * as Stains from './stain.js';
 import * as Splats from './splats.js';
-import { BufferAttribute, BufferGeometry, Color, DoubleSide, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshNormalMaterial, MeshPhysicalMaterial, PlaneBufferGeometry, SphereGeometry, Vector3 } from '../vendor/three.module.js';
+import {
+    BufferAttribute,
+    BufferGeometry,
+    Color,
+    Mesh,
+    MeshBasicMaterial,
+    SphereGeometry,
+} from '../vendor/three.module.js';
 import * as Render from './render3d.js';
 import * as ImageLoader from './ImageLoader.js';
 
@@ -20,8 +27,6 @@ export default class Blob {
 
         this.bodyGeometry = new SphereGeometry(20);
         const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('mouth')});
-        // const material = new MeshBasicMaterial({color: '#AA0000'});
-        // const material = new MeshPhysicalMaterial({color: '#ff0000'});
         this.bodyMesh = new Mesh(this.bodyGeometry, material);
         Render.add(this.bodyMesh);
 
@@ -94,7 +99,6 @@ export default class Blob {
 
 class Eye {
     static eyeGeometry = new SphereGeometry(10);
-    // static material = new MeshBasicMaterial({color: '#00ff00'});
     static material = new MeshBasicMaterial({color: '#ffffff'});
 
     constructor(blob, angle) {
@@ -112,19 +116,14 @@ class Eye {
         this.radius = Utils.random(10, 20);
         this.eyeMesh = new Mesh(Eye.eyeGeometry, Eye.material);
         this.eyeMesh.scale.x = this.eyeMesh.scale.y = this.eyeMesh.scale.z = this.size;
-        // this.eyeMesh.rotation.y = Math.PI * -0.5;
         Render.add(this.eyeMesh);
     }
 
     onFrame() {
-        // this.lookAtX *= 0.95;
         this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translation[0], 0.05);
         this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translation[1], 0.05);
-        // console.log(Math.round(this.lookAtX * 1000) / 1000);
-        
         
         this.time += this.timeDirection * 0.05;
-        // this.time += Utils.random(-0.05, 0.05);
 
         const angle = this.angle + this.time;
         const posX = this.blob.posX + Math.cos(angle) * this.radius;
@@ -133,8 +132,8 @@ class Eye {
         this.eyeMesh.position.y = posY;
         this.eyeMesh.position.z = 10;
         this.eyeMesh.lookAt(
-            posX + this.lookAtX * 50, //(this.blob.translation[0] * 100),
-            posY + this.lookAtY * 50, //(this.blob.translation[0] * 100),
+            posX + this.lookAtX * 50,
+            posY + this.lookAtY * 50,
             100
         );
     }
@@ -175,16 +174,12 @@ class Arm {
         this.isStuck = false;
         this.time = Math.round(Utils.random(0, 100));
         this.timeDirection = Utils.random(-0.1, 0.1);
-        // this.color = `rgb(${Utils.random(200, 255)}, 0, 0)`;
         this.hsl = [1, Utils.random(35, 80), 40];
-        const rgb = Utils.hslToRgb(1, Utils.random(35, 80), 40);
-        // this.color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
         this.eyeClosed = true;
         this.direction = [0, 0];
         this.softness = Utils.randomize(4, 2) / this.baseWidth;
 
         this.segments = this.buildSegments();
-
         this.meshSegments = this.#buildMeshFace(this.segmentsCount);
         Render.add(this.meshSegments);
         this.meshStraight = this.#buildMeshStraight();
@@ -234,9 +229,6 @@ class Arm {
     #buildMeshFace(segmentsCount) {
         const material = new MeshBasicMaterial({
             color: 0xff0000,
-            // color: this.color,
-            // transparent: true,
-            // alphaMap: ImageLoader.get('arm-alpha'),
             map: ImageLoader.get('test'),
         });
         let index = 0;
@@ -260,10 +252,6 @@ class Arm {
                 0, i * 0.1,
                 1, i * 0.1,
             );
-            // uv.push(
-            //     0, uvStep * i,
-            //     1, uvStep * i,
-            // );
         }
 
         index = 0;
@@ -286,7 +274,6 @@ class Arm {
         const geometry = new BufferGeometry();
         geometry.setIndex(facesIndex);
         geometry.setAttribute('position', new BufferAttribute(vertices, 3));
-        // geometry.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
         geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uv), 2));
         geometry.computeVertexNormals();
         geometry.normalizeNormals();
@@ -304,7 +291,6 @@ class Arm {
             let indexFace = i * 6;
             let indexUv = i * 4;
             
-            // const faceWidth = Math.max(0.4, this.segments[i].width / (1 + (i * 0.1)));
             const faceWidth = Math.max(0.15, Math.round(this.segments[i].width * 0.6));
 
             const startX = this.segments[i].start.x;
@@ -312,7 +298,6 @@ class Arm {
             const endX = this.segments[i].end.x;
             const endY = this.segments[i].end.y;
             const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
-            // const borderAngle = this.time * 0.02//directionAngle// - Math.PI * 1;
             const borderAngle = directionAngle * -1 - Math.PI * 2;
 
             const offsetX = Math.sin(borderAngle) * faceWidth;
@@ -342,7 +327,6 @@ class Arm {
         uvAttribute.needsUpdate = true;
 
         this.meshSegments.geometry.computeVertexNormals();
-
 
 
 
@@ -384,10 +368,6 @@ class Arm {
         if (Utils.random(0, 300) < 1) {
             Splats.add(Utils.randomize(this.posX, 20), this.posY, 0, 0);
         }
-
-        // this.mesh.position.x = this.posX;
-        // this.mesh.position.y = this.posY;
-        
         this.time += this.timeDirection;
         this.update();
         this.segments = this.buildSegments();
@@ -410,11 +390,8 @@ class Arm {
 
     update() {
         this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
-
         this.eyeClosed = Math.abs(this.time % 100) < 15;
-
         this.direction = [Math.cos(this.viewAngle), Math.sin(this.viewAngle)];
-        
         const gap = this.maxLength - this.baseLength;
         this.elongationPercent =  (this.length - this.baseLength) / gap;
         
@@ -440,9 +417,6 @@ class Arm {
     updateStuckState() {
         this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
         this.angle = Utils.pointsAngle([this.posX, this.posY], [this.targetPosX, this.targetPosY]);
-
-        // console.log(this.posX, this.posY);
-        
 
         if (this.mustQuiStuck() === true) {
             this.isStuck = false;
@@ -641,8 +615,6 @@ class Arm {
             
             waveFactor *= waveReduction;
             
-            // const width = Math.max(1, (this.width * 2) / test);
-
             let segmentWidthFactor = Math.abs(Math.cos(widthStep * i)) + 0.5;
             segmentWidthFactor *= distanceWidth;
             segmentWidthFactor *= 2;

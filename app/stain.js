@@ -3,6 +3,7 @@ import * as Renderer from './render3d.js';
 import * as Utils from './utils.js';
 
 let stains = [];
+const pool = [];
 const geometry = new CircleBufferGeometry(4, 8);
 const materials = [
     new MeshBasicMaterial({color: 0x990000, transparent: true, opacity: 0.5}),
@@ -18,12 +19,8 @@ export function add(posX, posY) {
     const count = Utils.random(2, 5);
 
     for (let i = 0; i < count; i ++) {
-        const mesh = new Mesh(geometry, Utils.randomElement(materials));
-        const size = Utils.randomize(3, 2);
-        mesh.scale.x = mesh.scale.y = mesh.scale.z = size;
-        mesh.position.x = Utils.randomize(posX, 5);
-        mesh.position.y = Utils.randomize(posY, 5);
-        mesh.position.z = 2;
+        const mesh = getCached();
+        resetMesh(mesh, posX, posY);
         Renderer.add(mesh);
 
         stains.push({
@@ -53,5 +50,29 @@ function removeStainIfNeeded(stain) {
     }
 
     Renderer.scene.remove(stain.mesh);
+    pool.push(stain.mesh);
+
     return false;
+}
+
+
+function getCached() {
+    if (pool.length === 0) {
+        return createMesh();
+    }
+
+    return pool.pop();
+}
+
+function createMesh() {
+    const mesh = new Mesh(geometry, Utils.randomElement(materials));
+    return mesh;
+}
+
+function resetMesh(mesh, posX, posY) {
+    const size = Utils.randomize(3, 2);
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = size;
+    mesh.position.x = Utils.randomize(posX, 5);
+    mesh.position.y = Utils.randomize(posY, 5);
+    mesh.position.z = 2;
 }
