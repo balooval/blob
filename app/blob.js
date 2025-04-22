@@ -19,13 +19,13 @@ export default class Blob {
         this.time = 0;
 
         this.bodyGeometry = new SphereGeometry(20);
-        const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('eye')});
+        const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('mouth')});
         // const material = new MeshBasicMaterial({color: '#AA0000'});
         // const material = new MeshPhysicalMaterial({color: '#ff0000'});
         this.bodyMesh = new Mesh(this.bodyGeometry, material);
         Render.add(this.bodyMesh);
 
-        this.eyes = this.#buidEyes(8);
+        this.eyes = this.#buidEyes(6);
     }
 
     #buidEyes(eyesCount) {
@@ -174,7 +174,7 @@ class Arm {
         this.wallPoint = {wall: null, intersection: {x: 0, y: 0}};
         this.isStuck = false;
         this.time = Math.round(Utils.random(0, 100));
-        this.timeDirection = Utils.random(-1, 1);
+        this.timeDirection = Utils.random(-0.1, 0.1);
         // this.color = `rgb(${Utils.random(200, 255)}, 0, 0)`;
         this.hsl = [1, Utils.random(35, 80), 40];
         const rgb = Utils.hslToRgb(1, Utils.random(35, 80), 40);
@@ -235,10 +235,11 @@ class Arm {
         // const material = new MeshBasicMaterial({color: 0xffffff, map: ImageLoader.get('arm-alpha')});
         
         const material = new MeshBasicMaterial({
-            // color: 0xff0000,
-            color: this.color,
-            transparent: true,
-            alphaMap: ImageLoader.get('arm-alpha'),
+            color: 0xff0000,
+            // color: this.color,
+            // transparent: true,
+            // alphaMap: ImageLoader.get('arm-alpha'),
+            map: ImageLoader.get('test'),
         });
         // const material = new MeshPhysicalMaterial({color: 0xffffff, map: ImageLoader.get('arm')});
         let index = 0;
@@ -259,8 +260,8 @@ class Arm {
                 -0.5, 0, 0.5,
             );
             uv.push(
-                0, i * 0.8,
-                1, i * 0.8,
+                0, i * 0.1,
+                1, i * 0.1,
             );
             // uv.push(
             //     0, uvStep * i,
@@ -326,8 +327,8 @@ class Arm {
             positionsFace[indexFace + 3] = startX + offsetX;
             positionsFace[indexFace + 4] = startY + offsetY;
 
-            uvValues[indexUv + 1] = i * 0.8 + Math.abs(this.time) * 0.03;
-            uvValues[indexUv + 3] = i * 0.8 + Math.abs(this.time) * 0.03;
+            uvValues[indexUv + 1] = i * 0.1 + Math.abs(this.time) * 0.05;
+            uvValues[indexUv + 3] = i * 0.1 + Math.abs(this.time) * 0.05;
 
             if (i === this.segmentsCount - 1) {
                 indexFace += 6;
