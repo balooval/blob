@@ -11,7 +11,7 @@ const materials = [
     new MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.6}),
 ];
 
-export function add(posX, posY) {
+export function add(posX, posY, dirX, dirY) {
     const count = Utils.random(2, 5);
 
     for (let i = 0; i < count; i ++) {
@@ -24,8 +24,8 @@ export function add(posX, posY) {
         Renderer.add(mesh);
 
         splats.push({
-            accelX: Utils.random(-1.0, 1.0),
-            accelY: Utils.random(0.5, 1.5),
+            accelX: Utils.random(dirX * -0.2, dirX * -0.6),
+            accelY: Utils.random(dirY * -0.2, dirY * -0.6),
             alpha: 1,
             mesh: mesh,
         });
@@ -52,7 +52,7 @@ function updateSplat(splat) {
 }
 
 function removeSplatIfNeeded(splat) {
-    if (splat.alpha > 0.5) {
+    if (splat.alpha > 0.3) {
         return true;
     }
 

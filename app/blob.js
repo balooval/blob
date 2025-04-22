@@ -232,8 +232,6 @@ class Arm {
     }
 
     #buildMeshFace(segmentsCount) {
-        // const material = new MeshBasicMaterial({color: 0xffffff, map: ImageLoader.get('arm-alpha')});
-        
         const material = new MeshBasicMaterial({
             color: 0xff0000,
             // color: this.color,
@@ -241,7 +239,6 @@ class Arm {
             // alphaMap: ImageLoader.get('arm-alpha'),
             map: ImageLoader.get('test'),
         });
-        // const material = new MeshPhysicalMaterial({color: 0xffffff, map: ImageLoader.get('arm')});
         let index = 0;
         const facesIndex = [];
         const positions = [];
@@ -384,6 +381,10 @@ class Arm {
         this.posX = posX + Math.cos(this.angle) * this.startOffset;
         this.posY = posY + Math.sin(this.angle) * this.startOffset;
 
+        if (Utils.random(0, 300) < 1) {
+            Splats.add(Utils.randomize(this.posX, 20), this.posY, 0, 0);
+        }
+
         // this.mesh.position.x = this.posX;
         // this.mesh.position.y = this.posY;
         
@@ -513,7 +514,6 @@ class Arm {
         
         this.targetPosX = targetPoint[0];
         this.targetPosY = targetPoint[1];
-
         this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
 
         const diff = Utils.distance({x: this.targetPosX, y: this.targetPosY}, this.wallPoint.intersection);
@@ -523,12 +523,14 @@ class Arm {
     }
 
     stuckToWall(wallPoint) {
+        const dirX = wallPoint.intersection.x - this.targetPosX;
+        const dirY = wallPoint.intersection.y - this.targetPosY;
+        Stains.add(wallPoint.intersection.x, wallPoint.intersection.y);
+        Splats.add(wallPoint.intersection.x, wallPoint.intersection.y, dirX, dirY);
         this.targetPosX = wallPoint.intersection.x;
         this.targetPosY = wallPoint.intersection.y;
         this.isStuck = true;
         this.state = Arm.#STATE_STUCKED;
-        Stains.add(this.targetPosX, this.targetPosY);
-        Splats.add(this.targetPosX, this.targetPosY);
 
         const hooksCount = 4;
         const distance = 10;
