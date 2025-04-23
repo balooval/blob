@@ -6,6 +6,7 @@ import * as Map from './map.js';
 import * as Stain from './stain.js';
 import * as Splats from './splats.js';
 import * as Keyboard from './keyboard.js';
+import * as Gamepad from './gamepad.js';
 
 let blob;
 
@@ -36,6 +37,7 @@ export function init() {
 		Render.init('viewport');
 		UiMouse.init('viewport');
 		Keyboard.init();
+		Gamepad.init();
 
 		const wallsMesh = Map.buildMesh();
 		Render.add(wallsMesh);

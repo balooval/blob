@@ -3,6 +3,7 @@ import * as Map from './map.js';
 import * as Stains from './stain.js';
 import * as Splats from './splats.js';
 import * as Keyboard from './keyboard.js';
+import * as Gamepad from './gamepad.js';
 import {
     BufferAttribute,
     BufferGeometry,
@@ -42,6 +43,8 @@ export default class Blob {
 
         Keyboard.evt.addEventListener('DOWN', this, this.onKeyDown);
         Keyboard.evt.addEventListener('UP', this, this.onKeyUp);
+        Gamepad.evt.addEventListener('PRESS', this, this.onGamepadDown);
+        Gamepad.evt.addEventListener('RELEASE', this, this.onGamepadUp);
 
         this.inputMoves = {
 			left: 0,
@@ -56,7 +59,11 @@ export default class Blob {
     onFrame() {
         this.time ++;
 
+        this.inputMoves = Gamepad.getMove(this.inputMoves);
+
         const keyboardTranslation = this.#moveFromKeyboard();
+        // console.log(gamepadTranslation);
+        
 
         this.translationForces[0] += keyboardTranslation.x;
         this.translationForces[1] += keyboardTranslation.y;
@@ -204,6 +211,22 @@ export default class Blob {
 
         return arms;
     }
+
+    onGamepadDown(code) {
+		switch (code) {
+			case 'BTN_2':
+				this.#releaseWalls();
+			break;
+		}
+	}
+
+    onGamepadUp(code) {
+		switch (code) {
+			case 'BTN_2':
+				this.#holdWalls();
+			break;
+		}
+	}
 
     onKeyDown(code) {
 		switch (code) {
