@@ -19,13 +19,16 @@ import * as ImageLoader from './ImageLoader.js';
 export default class Blob {
     constructor() {
         this.size = 50;
-        this.posX = 200;
-        this.posY = 160;
+        this.posX = 0;
+        this.posY = 10;
+        // this.posX = 0;
+        // this.posY = -50;
         this.translation = [0, 0];
         this.moveAngle = 0;
         // this.arms = this.initArms(4);
         this.arms = this.initArms(16);
         this.time = 0;
+        this.fallTranslation = 0;
 
         this.bodyGeometry = new SphereGeometry(20);
         const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('mouth')});
@@ -43,6 +46,8 @@ export default class Blob {
 			up: 0,
 			down: 0,
 		};
+
+        this.keyboardVector = new Vector2();
     }
 
     onKeyDown(code) {
@@ -105,11 +110,19 @@ export default class Blob {
 
         const translationVector = this.#moveFromKeyboard();
 
+        if (this.arms.every(arm => arm.state === 'STATE_IDLE') === true) {
+            this.fallTranslation += 0.2;
+            translationVector.x = 0;
+            translationVector.y = 0;
+        } else {
+            this.fallTranslation = 0;
+        }
+
         const lastPosX = this.posX;
         const lastPosY = this.posY;
 
         this.posX += translationVector.x;
-        this.posY += translationVector.y;
+        this.posY += translationVector.y - this.fallTranslation;
         // this.posX = UiMouse.worldPosition[0];
         // this.posY = UiMouse.worldPosition[1];
 
@@ -125,24 +138,27 @@ export default class Blob {
         }
 
         this.arms.map(arm => arm.onFrame(this.posX, this.posY));
-
+        
         this.#updateSize();
         this.#updateEyes();
     }
 
     #moveFromKeyboard() {
-        const directionX = this.inputMoves.right - this.inputMoves.left;
-		const directionY = this.inputMoves.up - this.inputMoves.down;
+        this.keyboardVector.x = this.inputMoves.right - this.inputMoves.left;
+        this.keyboardVector.y = this.inputMoves.up - this.inputMoves.down;
+
+        this.arms.forEach(arm => arm.forcedDirection = this.keyboardVector);
         
-        if (directionX === 0 && directionY === 0) {
+        if (this.keyboardVector.manhattanLength() === 0) {
             return new Vector2(0, 0);
         }
 
-        const moveVector = new Vector2(directionX, directionY);
-
+        const moveVector = new Vector2(this.keyboardVector.x, this.keyboardVector.y);
         const forces = this.arms.map(arm => arm.getAttractForce(moveVector));
-        const total = Utils.addNumbers(forces);
+        const total = Math.min(5, Utils.addNumbers(forces) * 50);
+        // const total = Utils.addNumbers(forces);
 
+        // return new Vector2(0, 0);
         return moveVector.multiplyScalar(total);
     }
 
@@ -183,6 +199,7 @@ class Arm {
         this.posX = 0;
         this.posY = 0;
         this.viewAngle = angle;
+        this.forcedDirection = new Vector2();
         this.baseAngle = angle;
         this.angle = this.baseAngle;
         this.maxLength = Utils.random(100, 150);
@@ -231,7 +248,7 @@ class Arm {
             return value;
         }
         
-        const possibleElongation = 1 - (this.length / this.maxLength);
+        const possibleElongation = 1.1 - (this.length / this.maxLength);
 
         if (possibleElongation === 0) {
             return 0;
@@ -326,7 +343,12 @@ class Arm {
     }
 
     #stuckAngleIsOk() {
-        const angleDiff = Utils.angleDiff(this.baseAngle, this.angle);
+
+        const forcedBaseAngle = new Vector2(Math.cos(this.baseAngle), Math.sin(this.baseAngle))
+        .add(this.forcedDirection)
+        .normalize();
+
+        const angleDiff = Utils.angleDiff(forcedBaseAngle, this.angle);
 
         if (Math.abs(angleDiff) > this.maxAngleDiff) {
             return false;
@@ -336,11 +358,27 @@ class Arm {
     }
     
     idle() {
-        const waveLenght = Math.abs(Math.cos(this.time * 0.01) * (this.baseLength * 5));
-        this.targetPosX = this.posX + Math.cos(this.angle) * waveLenght;
-        this.targetPosY = this.posY + Math.sin(this.angle) * waveLenght;
+        // this.viewAngle = this.baseAngle + Math.cos(this.time * 0.1) * 0.5;
+        
+        const currentDirection = new Vector2(Math.cos(this.viewAngle), Math.sin(this.viewAngle))
+        const forcedDirection = new Vector2(Math.cos(this.baseAngle), Math.sin(this.baseAngle))
+        .add(this.forcedDirection)
+        .normalize();
 
-        this.viewAngle = this.baseAngle + Math.cos(this.time * 0.1) * 0.5;
+        const finalDirection = Utils.lerpPoint(
+            [currentDirection.x, currentDirection.y],
+            [forcedDirection.x, forcedDirection.y],
+            0.2
+        );
+
+        this.viewAngle = new Vector2(finalDirection[0], finalDirection[1]).angle();
+        this.viewAngle += Math.cos(this.time * 1) * 0.1;
+
+        // const forcedLength = 5 + this.forcedDirection.length() * 5;
+        
+        const waveLenght = Math.abs(Math.cos(this.time * 0.01) * (this.baseLength * 5));
+        this.targetPosX = this.posX + Math.cos(this.viewAngle) * waveLenght;
+        this.targetPosY = this.posY + Math.sin(this.viewAngle) * waveLenght;
 
         this.#scanForDeploy();
     }
@@ -352,6 +390,40 @@ class Arm {
             this.wallPoint = touchedPoint;
             this.state = Arm.#STATE_DEPLOY;
         }
+    }
+
+    #getTouchedPoint() {
+        return Map.walls.map(wall => {
+            const viewSegment = this.#getViewSegment();
+            const intersection = Utils.segmentIntersection(
+                viewSegment[0].x,
+                viewSegment[0].y,
+                viewSegment[1].x,
+                viewSegment[1].y,
+                wall.positions[0].x,
+                wall.positions[0].y,
+                wall.positions[1].x,
+                wall.positions[1].y,
+            );
+            return {
+                intersection: intersection,
+                wall: wall,
+            }
+        }).filter(point => point.intersection !== null)
+        .pop();
+    }
+
+    #getViewSegment() {
+        return [
+            {
+                x: this.posX,
+                y: this.posY,
+            },
+            {
+                x: this.posX + Math.cos(this.viewAngle) * this.viewLength,
+                y: this.posY + Math.sin(this.viewAngle) * this.viewLength,
+            },
+        ];
     }
 
     #deploy() {
@@ -399,27 +471,6 @@ class Arm {
         }
     }
 
-    #getTouchedPoint() {
-        return Map.walls.map(wall => {
-            const viewSegment = this.#getViewSegment();
-            const intersection = Utils.segmentIntersection(
-                viewSegment[0].x,
-                viewSegment[0].y,
-                viewSegment[1].x,
-                viewSegment[1].y,
-                wall.positions[0].x,
-                wall.positions[0].y,
-                wall.positions[1].x,
-                wall.positions[1].y,
-            );
-            return {
-                intersection: intersection,
-                wall: wall,
-            }
-        }).filter(point => point.intersection !== null)
-        .pop();
-    }
-
     #retract() {
         let isRetracted = true;
         this.hooks = [];
@@ -427,7 +478,7 @@ class Arm {
         const diff = this.length - this.baseLength;
 
         if (diff > 0.1) {
-            this.length = this.baseLength + (diff * 0.8);
+            this.length = this.baseLength + (diff * 0.5);
             isRetracted = false;
         }
 
@@ -443,19 +494,6 @@ class Arm {
         if (isRetracted === true) {
             this.state = Arm.#STATE_IDLE;
         }
-    }
-
-    #getViewSegment() {
-        return [
-            {
-                x: this.posX,
-                y: this.posY,
-            },
-            {
-                x: this.posX + Math.cos(this.viewAngle) * this.viewLength,
-                y: this.posY + Math.sin(this.viewAngle) * this.viewLength,
-            },
-        ];
     }
 
     #buildSegments() {
@@ -487,7 +525,7 @@ class Arm {
                 percentStep * (i + 1)
             );
             
-            ecart = Math.cos((this.time + (i * 10)) * 0.08) * waveFactor;
+            ecart = Math.cos((5 * this.time + (i * 10)) * 0.08) * waveFactor;
             ecart *= 1 - this.elongationPercent;
 
             const segmentEndPos = [
