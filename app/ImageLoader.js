@@ -2,7 +2,7 @@ import {
 	NearestFilter,
 	RepeatWrapping,
 	TextureLoader
-} from '../../vendor/three.module.js';
+} from '../vendor/three.module.js';
 
 let textureLoader = new TextureLoader();
 let imagesList;

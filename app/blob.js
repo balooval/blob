@@ -31,6 +31,7 @@ export default class Blob {
         this.fallTranslation = 0;
         this.floatingTranslation = [0, 0];
         this.translationForces = [0, 0];
+        this.searchForWalls = true;
 
         this.bodyGeometry = new SphereGeometry(20);
         const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('mouth')});
@@ -75,8 +76,29 @@ export default class Blob {
         const lastPosX = this.posX;
         const lastPosY = this.posY;
 
-        this.posX += this.floatingTranslation[0];
-        this.posY += this.floatingTranslation[1];
+        const nexPos = [
+            this.posX + this.floatingTranslation[0],
+            this.posY + this.floatingTranslation[1],
+        ];
+
+        const wallIntersection = this.#getWallImpact(
+            lastPosX, lastPosY,
+            nexPos[0], nexPos[1],
+        );
+
+        if (wallIntersection) {
+            // const finalPosition = Utils.lerpPoint([lastPosX, lastPosY], [wallIntersection.x, wallIntersection.y], 0.1);
+            this.posX = lastPosX;
+            this.posY = lastPosY;
+            
+        } else {
+            this.posX = nexPos[0];
+            this.posY = nexPos[1];
+        }
+
+
+        // this.posX += this.floatingTranslation[0];
+        // this.posY += this.floatingTranslation[1];
 
         this.bodyMesh.position.x = this.posX;
         this.bodyMesh.position.y = this.posY;
@@ -107,6 +129,33 @@ export default class Blob {
         */
     }
 
+    #getWallImpact(startX, startY, endX, endY) {
+        const moveSegment = [
+            {
+                x: startX,
+                y: startY,
+            },
+            {
+                x: endX,
+                y: endY,
+            },
+        ];
+
+        return Map.walls.map(wall => {
+            return Utils.segmentIntersection(
+                moveSegment[0].x,
+                moveSegment[0].y,
+                moveSegment[1].x,
+                moveSegment[1].y,
+                wall.positions[0].x,
+                wall.positions[0].y,
+                wall.positions[1].x,
+                wall.positions[1].y,
+            );
+        }).filter(intersection => intersection !== null)
+        .pop();
+    }
+
     #moveFromKeyboard() {
         this.keyboardVector.x = this.inputMoves.right - this.inputMoves.left;
         this.keyboardVector.y = this.inputMoves.up - this.inputMoves.down;
@@ -124,8 +173,13 @@ export default class Blob {
         return moveVector.multiplyScalar(total);
     }
 
-    #releaseArms() {
+    #releaseWalls() {
+        this.searchForWalls = false;
         this.arms.forEach(arm => arm.releaseWall());
+    }
+    
+    #holdWalls() {
+        this.searchForWalls = true;
     }
 
     #updateEyes() {
@@ -145,7 +199,7 @@ export default class Blob {
         const angleStep = (Math.PI * 2) / count;
 
         for (let i = 0; i < count; i ++) {
-            arms.push(new Arm(angleStep * i));
+            arms.push(new Arm(angleStep * i, this));
         }
 
         return arms;
@@ -170,7 +224,7 @@ export default class Blob {
 				this.inputMoves.up = 1;
 			break;
 			case 'SPACE':
-				this.#releaseArms();
+				this.#releaseWalls();
 			break;
 		}
 	}
@@ -192,6 +246,9 @@ export default class Blob {
 			case 'UP':
 			case 'Z':
 				this.inputMoves.up = 0;
+			break;
+            case 'SPACE':
+				this.#holdWalls();
 			break;
 		}
 	}
@@ -217,7 +274,8 @@ class Arm {
     static #STATE_STUCKED = 'STATE_STUCKED';
     static #STATE_RETRACT = 'STATE_RETRACT';
 
-    constructor(angle) {
+    constructor(angle, blob) {
+        this.blob = blob;
         this.state = Arm.#STATE_IDLE;
         this.startOffset = 2;
         this.posX = 0;
@@ -405,7 +463,9 @@ class Arm {
         this.targetPosX = this.posX + Math.cos(this.viewAngle) * waveLenght;
         this.targetPosY = this.posY + Math.sin(this.viewAngle) * waveLenght;
 
-        this.#scanForDeploy();
+        if (this.blob.searchForWalls === true) {
+            this.#scanForDeploy();
+        }
     }
 
     #scanForDeploy() {
