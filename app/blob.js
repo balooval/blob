@@ -213,7 +213,7 @@ class Arm {
         this.direction = [0, 0];
         this.softness = Utils.randomize(4, 2) / this.baseWidth;
 
-        this.segments = this.buildSegments();
+        this.segments = this.#buildSegments();
         this.meshSegments = this.#buildMeshFace(this.segmentsCount);
         Render.add(this.meshSegments);
         this.meshStraight = this.#buildMeshStraight();
@@ -225,7 +225,19 @@ class Arm {
             return 0;
         }
 
-        return Math.max(0, this.attractDirection.dot(moveVector));
+        const value = this.attractDirection.dot(moveVector);
+
+        if (value > 0) {
+            return value;
+        }
+        
+        const possibleElongation = 1 - (this.length / this.maxLength);
+
+        if (possibleElongation === 0) {
+            return 0;
+        }
+
+        return value * -1 * possibleElongation;
     }
 
     onFrame(posX, posY) {
@@ -237,19 +249,19 @@ class Arm {
         }
         this.time += this.timeDirection;
         this.update();
-        this.segments = this.buildSegments();
-        this.updagesegmentsVertices();
+        this.segments = this.#buildSegments();
+        this.#updagesegmentsVertices();
 
         if (this.state === Arm.#STATE_STUCKED) {
-            return this.updateStuckState();
+            return this.#updateStuckState();
         }
 
         if (this.state === Arm.#STATE_RETRACT) {
-            return this.retract();
+            return this.#retract();
         }
 
         if (this.state === Arm.#STATE_DEPLOY) {
-            return this.deploy();
+            return this.#deploy();
         }
 
         this.idle();
@@ -281,31 +293,31 @@ class Arm {
         return true;
     }
 
-    updateStuckState() {
+    #updateStuckState() {
         this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
         this.angle = Utils.pointsAngle([this.posX, this.posY], [this.targetPosX, this.targetPosY]);
 
         this.attractDirection.x = Math.cos(this.angle);
         this.attractDirection.y = Math.sin(this.angle);
 
-        if (this.mustQuiStuck() === true) {
+        if (this.#mustQuiStuck() === true) {
             this.isStuck = false;
             this.state = Arm.#STATE_RETRACT;
         }
     }
 
-    mustQuiStuck() {
-        if (this.stuckDistanceIsOk() === false) {
+    #mustQuiStuck() {
+        if (this.#stuckDistanceIsOk() === false) {
             return true;
         }
-        if (this.stuckAngleIsOk() === false) {
+        if (this.#stuckAngleIsOk() === false) {
             return true;
         }
 
         return false;
     }
 
-    stuckDistanceIsOk() {
+    #stuckDistanceIsOk() {
         if (this.length > this.maxLength) {
             return false;
         }
@@ -313,7 +325,7 @@ class Arm {
         return true;
     }
 
-    stuckAngleIsOk() {
+    #stuckAngleIsOk() {
         const angleDiff = Utils.angleDiff(this.baseAngle, this.angle);
 
         if (Math.abs(angleDiff) > this.maxAngleDiff) {
@@ -330,11 +342,11 @@ class Arm {
 
         this.viewAngle = this.baseAngle + Math.cos(this.time * 0.1) * 0.5;
 
-        this.scanForDeploy();
+        this.#scanForDeploy();
     }
 
-    scanForDeploy() {
-        const touchedPoint = this.getTouchedPoint();
+    #scanForDeploy() {
+        const touchedPoint = this.#getTouchedPoint();
         
         if (touchedPoint) {
             this.wallPoint = touchedPoint;
@@ -342,7 +354,7 @@ class Arm {
         }
     }
 
-    deploy() {
+    #deploy() {
         const distance = Utils.distance({x: this.posX, y: this.posY}, this.wallPoint.intersection);
 
         if (distance > this.maxLength) {
@@ -362,11 +374,11 @@ class Arm {
 
         const diff = Utils.distance({x: this.targetPosX, y: this.targetPosY}, this.wallPoint.intersection);
         if (diff < 5) {
-            this.stuckToWall(this.wallPoint);
+            this.#stuckToWall(this.wallPoint);
         }
     }
 
-    stuckToWall(wallPoint) {
+    #stuckToWall(wallPoint) {
         const dirX = wallPoint.intersection.x - this.targetPosX;
         const dirY = wallPoint.intersection.y - this.targetPosY;
         Stains.add(wallPoint.intersection.x, wallPoint.intersection.y);
@@ -387,9 +399,9 @@ class Arm {
         }
     }
 
-    getTouchedPoint() {
+    #getTouchedPoint() {
         return Map.walls.map(wall => {
-            const viewSegment = this.getViewSegment();
+            const viewSegment = this.#getViewSegment();
             const intersection = Utils.segmentIntersection(
                 viewSegment[0].x,
                 viewSegment[0].y,
@@ -408,7 +420,7 @@ class Arm {
         .pop();
     }
 
-    retract() {
+    #retract() {
         let isRetracted = true;
         this.hooks = [];
 
@@ -433,7 +445,7 @@ class Arm {
         }
     }
 
-    getViewSegment() {
+    #getViewSegment() {
         return [
             {
                 x: this.posX,
@@ -446,7 +458,7 @@ class Arm {
         ];
     }
 
-    buildSegments() {
+    #buildSegments() {
         const res = [];
         const percentStep = 1 / this.segmentsCount;
         let waveFactor = 5;
@@ -605,7 +617,7 @@ class Arm {
         return new Mesh(geometry, material);
     }
 
-    updagesegmentsVertices() {
+    #updagesegmentsVertices() {
         let uvAttribute = this.meshSegments.geometry.attributes.uv;
         let uvValues = uvAttribute.array;
         let positionAttributeFace = this.meshSegments.geometry.attributes.position;
