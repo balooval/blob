@@ -17,7 +17,7 @@ function onMouseMove(evt) {
     pointer.x = (mousePosition[0] / Render.worldWidth) * 2 - 1;
 	pointer.y = - (mousePosition[1] / Render.worldHeight) * 2 + 1;
 
-    const positionVector = Render.getPosition(pointer);
-    worldPosition[0] = positionVector.x;
-    worldPosition[1] = positionVector.y;
+    // const positionVector = Render.getPosition(pointer);
+    // worldPosition[0] = positionVector.x;
+    // worldPosition[1] = positionVector.y;
 }

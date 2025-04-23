@@ -24,6 +24,7 @@ export default class Blob {
         this.posY = 10;
         // this.posX = 0;
         // this.posY = -50;
+        this.positionVector = new Vector2(this.posX, this.posY);
         this.translationDone = [0, 0];
         this.moveAngle = 0;
         // this.arms = this.initArms(4);
@@ -103,6 +104,9 @@ export default class Blob {
             this.posY = nexPos[1];
         }
 
+        this.positionVector.x = this.posX;
+        this.positionVector.y = this.posY;
+
 
         // this.posX += this.floatingTranslation[0];
         // this.posY += this.floatingTranslation[1];
@@ -175,7 +179,7 @@ export default class Blob {
 
         const moveVector = new Vector2(this.keyboardVector.x, this.keyboardVector.y);
         const forces = this.arms.map(arm => arm.getAttractForce(moveVector));
-        const total = Math.min(4, Utils.addNumbers(forces) * 50);
+        const total = Math.min(3, Utils.addNumbers(forces) * 50);
         
         return moveVector.multiplyScalar(total);
     }
@@ -369,7 +373,7 @@ class Arm {
         this.time += this.timeDirection;
         this.update();
         this.segments = this.#buildSegments();
-        this.#updagesegmentsVertices();
+        this.#updageSegmentsGeometry();
 
         if (this.state === Arm.#STATE_STUCKED) {
             return this.#updateStuckState();
@@ -719,7 +723,6 @@ class Arm {
         const normals = [];
         const uv = [];
         const z = Utils.random(5, 15);
-        const uvStep = 1 / segmentsCount;
         
         for (let i = 0; i < segmentsCount + 1; i ++) {
             positions.push(
@@ -763,11 +766,16 @@ class Arm {
         return new Mesh(geometry, material);
     }
 
-    #updagesegmentsVertices() {
+    #updageSegmentsGeometry() {
+        this.meshSegments.position.x = this.posX;
+        this.meshSegments.position.y = this.posY;
+        this.meshStraight.position.x = this.posX;
+        this.meshStraight.position.y = this.posY;
+
         let uvAttribute = this.meshSegments.geometry.attributes.uv;
         let uvValues = uvAttribute.array;
-        let positionAttributeFace = this.meshSegments.geometry.attributes.position;
-        let positionsFace = positionAttributeFace.array;
+        let positionAttribute = this.meshSegments.geometry.attributes.position;
+        let positionsValues = positionAttribute.array;
 
         for (let i = 0; i < this.segmentsCount + 0; i ++) {
             let indexFace = i * 6;
@@ -775,37 +783,37 @@ class Arm {
             
             const faceWidth = Math.max(0.15, Math.round(this.segments[i].width * 0.6));
 
-            const startX = this.segments[i].start.x;
-            const startY = this.segments[i].start.y;
-            const endX = this.segments[i].end.x;
-            const endY = this.segments[i].end.y;
+            const startX = this.segments[i].start.x - this.posX;
+            const startY = this.segments[i].start.y - this.posY;
+            const endX = this.segments[i].end.x - this.posX;
+            const endY = this.segments[i].end.y - this.posY;
             const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
             const borderAngle = directionAngle * -1 - Math.PI * 2;
 
             const offsetX = Math.sin(borderAngle) * faceWidth;
             const offsetY = Math.cos(borderAngle) * faceWidth;
 
-            positionsFace[indexFace + 0] = startX - offsetX;
-            positionsFace[indexFace + 1] = startY - offsetY;
+            positionsValues[indexFace + 0] = startX - offsetX;
+            positionsValues[indexFace + 1] = startY - offsetY;
 
-            positionsFace[indexFace + 3] = startX + offsetX;
-            positionsFace[indexFace + 4] = startY + offsetY;
+            positionsValues[indexFace + 3] = startX + offsetX;
+            positionsValues[indexFace + 4] = startY + offsetY;
 
             uvValues[indexUv + 1] = i * 0.1 + Math.abs(this.time) * 0.05;
             uvValues[indexUv + 3] = i * 0.1 + Math.abs(this.time) * 0.05;
 
             if (i === this.segmentsCount - 1) {
                 indexFace += 6;
-                positionsFace[indexFace + 0] = endX - offsetX;
-                positionsFace[indexFace + 1] = endY - offsetY;
+                positionsValues[indexFace + 0] = endX - offsetX;
+                positionsValues[indexFace + 1] = endY - offsetY;
 
-                positionsFace[indexFace + 3] = endX + offsetX;
-                positionsFace[indexFace + 4] = endY + offsetY;
+                positionsValues[indexFace + 3] = endX + offsetX;
+                positionsValues[indexFace + 4] = endY + offsetY;
             }
         }
 
         
-        positionAttributeFace.needsUpdate = true;
+        positionAttribute.needsUpdate = true;
         uvAttribute.needsUpdate = true;
 
         this.meshSegments.geometry.computeVertexNormals();
@@ -817,10 +825,10 @@ class Arm {
         const startWidth = Math.max(0.3, this.segments[0].width * 0.2);
         const endWidth = Math.max(0.3, this.segments[this.segmentsCount - 1].width * 0.3);
 
-        const startX = this.segments[0].start.x;
-        const startY = this.segments[0].start.y;
-        const endX = this.segments[this.segmentsCount - 1].end.x;
-        const endY = this.segments[this.segmentsCount - 1].end.y;
+        const startX = this.segments[0].start.x - this.posX;
+        const startY = this.segments[0].start.y - this.posY;
+        const endX = this.segments[this.segmentsCount - 1].end.x - this.posX;
+        const endY = this.segments[this.segmentsCount - 1].end.y - this.posY;
         const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
         const borderAngle = directionAngle * -1 - Math.PI * 2;
 

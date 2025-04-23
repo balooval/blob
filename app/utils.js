@@ -71,6 +71,13 @@ export function lerpPoint(pointA, pointB, percent) {
     ]
 }
 
+export function lerpVector(vectorA, vectorB, percent) {
+    return {
+        x: lerpFloat(vectorA.x, vectorB.x, percent),
+        y: lerpFloat(vectorA.y, vectorB.y, percent),
+    }
+}
+
 export function radians(_degres){
     return Math.PI * _degres / 180;
 }

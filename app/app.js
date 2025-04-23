@@ -7,6 +7,7 @@ import * as Stain from './stain.js';
 import * as Splats from './splats.js';
 import * as Keyboard from './keyboard.js';
 import * as Gamepad from './gamepad.js';
+import * as Camera from './camera.js';
 
 let blob;
 
@@ -38,10 +39,11 @@ export function init() {
 		UiMouse.init('viewport');
 		Keyboard.init();
 		Gamepad.init();
-
+		
 		const wallsMesh = Map.buildMesh();
 		Render.add(wallsMesh);
 		blob =  new Blob();
+		Camera.init(Render.camera, blob);
 		onFrame();
 	});
 }
@@ -51,5 +53,6 @@ function onFrame() {
 	blob.onFrame();
 	Stain.onFrame();
 	Splats.onFrame();
+	Camera.onFrame();
 	requestAnimationFrame(onFrame);
 }
