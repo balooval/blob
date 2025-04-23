@@ -1,4 +1,5 @@
 import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "../vendor/three.module.js";
+import * as Utils from './utils.js';
 
 export const walls = [];
 
@@ -46,9 +47,39 @@ wallsPositions.forEach(wallPos => {
     walls.push({
         angle: angle,
         direction: [Math.cos(angle), Math.sin(angle)],
-        positions: wallPos
+        positions: wallPos,
+        bbox: calcWallBBox(wallPos),
     });
 });
+
+export function getWallIntersection(segmentToTest) {
+    return walls.map(wall => {
+        const intersection = Utils.segmentIntersection(
+            segmentToTest[0].x,
+            segmentToTest[0].y,
+            segmentToTest[1].x,
+            segmentToTest[1].y,
+            
+            wall.positions[0].x,
+            wall.positions[0].y,
+            wall.positions[1].x,
+            wall.positions[1].y,
+        );
+
+        if (intersection === null) {
+            return null;
+        }
+
+        return {
+            intersection: intersection,
+            wall: wall,
+            distance: Utils.distance(segmentToTest[0], intersection),
+        }
+    })
+    .filter(hit => hit !== null)
+    .sort((hitA, hitB) => Math.sign(hitA.distance - hitB.distance))
+    .shift();
+}
 
 export function buildMesh() {
     let facesIndex = 0;
@@ -102,4 +133,13 @@ export function buildMesh() {
 
     const material = new MeshBasicMaterial({color: '#606060'});
     return new Mesh(geometry, material);
+}
+
+function calcWallBBox(wallPos) {
+    return {
+        left: Math.min(wallPos[0].x, wallPos[1].x),
+        right: Math.max(wallPos[0].x, wallPos[1].x),
+        bottom: Math.min(wallPos[0].y, wallPos[1].y),
+        top: Math.max(wallPos[0].y, wallPos[1].y),
+    }
 }

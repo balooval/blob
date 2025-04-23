@@ -152,19 +152,7 @@ export default class Blob {
             },
         ];
 
-        return Map.walls.map(wall => {
-            return Utils.segmentIntersection(
-                moveSegment[0].x,
-                moveSegment[0].y,
-                moveSegment[1].x,
-                moveSegment[1].y,
-                wall.positions[0].x,
-                wall.positions[0].y,
-                wall.positions[1].x,
-                wall.positions[1].y,
-            );
-        }).filter(intersection => intersection !== null)
-        .pop();
+        return Map.getWallIntersection(moveSegment);
     }
 
     #moveFromKeyboard() {
@@ -505,24 +493,8 @@ class Arm {
     }
 
     #getTouchedPoint() {
-        return Map.walls.map(wall => {
-            const viewSegment = this.#getViewSegment();
-            const intersection = Utils.segmentIntersection(
-                viewSegment[0].x,
-                viewSegment[0].y,
-                viewSegment[1].x,
-                viewSegment[1].y,
-                wall.positions[0].x,
-                wall.positions[0].y,
-                wall.positions[1].x,
-                wall.positions[1].y,
-            );
-            return {
-                intersection: intersection,
-                wall: wall,
-            }
-        }).filter(point => point.intersection !== null)
-        .pop();
+        const viewSegment = this.#getViewSegment();
+        return Map.getWallIntersection(viewSegment);
     }
 
     #getViewSegment() {
