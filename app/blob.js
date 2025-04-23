@@ -1,4 +1,3 @@
-import * as UiMouse from './uiMouse.js';
 import * as Utils from './utils.js';
 import * as Map from './map.js';
 import * as Stains from './stain.js';
@@ -18,17 +17,20 @@ import * as ImageLoader from './ImageLoader.js';
 
 export default class Blob {
     constructor() {
+        this.acidProduction = 0;
         this.size = 50;
         this.posX = 0;
         this.posY = 10;
         // this.posX = 0;
         // this.posY = -50;
-        this.translation = [0, 0];
+        this.translationDone = [0, 0];
         this.moveAngle = 0;
         // this.arms = this.initArms(4);
         this.arms = this.initArms(16);
         this.time = 0;
         this.fallTranslation = 0;
+        this.floatingTranslation = [0, 0];
+        this.translationForces = [0, 0];
 
         this.bodyGeometry = new SphereGeometry(20);
         const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('mouth')});
@@ -50,6 +52,105 @@ export default class Blob {
         this.keyboardVector = new Vector2();
     }
 
+    onFrame() {
+        this.time ++;
+
+        const keyboardTranslation = this.#moveFromKeyboard();
+
+        this.translationForces[0] += keyboardTranslation.x;
+        this.translationForces[1] += keyboardTranslation.y;
+
+        if (this.arms.some(arm => arm.state === 'STATE_STUCKED') === true) {
+            this.fallTranslation = 0;
+            this.floatingTranslation[0] = keyboardTranslation.x;
+            this.floatingTranslation[1] = keyboardTranslation.y;
+        } else {
+            this.fallTranslation += 0.3;
+            this.floatingTranslation[0] *= 0.98;
+            this.floatingTranslation[1] -= 0.2;
+            keyboardTranslation.x = 0;
+            keyboardTranslation.y = 0;
+        }
+
+        const lastPosX = this.posX;
+        const lastPosY = this.posY;
+
+        this.posX += this.floatingTranslation[0];
+        this.posY += this.floatingTranslation[1];
+
+        this.bodyMesh.position.x = this.posX;
+        this.bodyMesh.position.y = this.posY;
+
+        this.translationDone[0] = this.posX - lastPosX;
+        this.translationDone[1] = this.posY - lastPosY;
+        
+        this.moveAngle = Math.atan2(this.translationDone[1], this.translationDone[0]);
+        if (Math.abs(this.translationDone[0]) + Math.abs(this.translationDone[1]) === 0) {
+            this.moveAngle = 0;
+        }
+
+        this.arms.map(arm => arm.onFrame(this.posX, this.posY));
+        
+        this.#updateSize();
+        this.#updateEyes();
+
+        
+        /*
+        this.acidProduction += Utils.random(0, 1);
+        const acidQuantity = Utils.random(0, 500);
+
+        if (acidQuantity < this.acidProduction) {
+            // this.acidProduction = 0;
+            this.acidProduction -= acidQuantity;
+            Splats.addAcid(Utils.randomize(this.posX, 5), this.posY, 0, 0, acidQuantity);
+        }
+        */
+    }
+
+    #moveFromKeyboard() {
+        this.keyboardVector.x = this.inputMoves.right - this.inputMoves.left;
+        this.keyboardVector.y = this.inputMoves.up - this.inputMoves.down;
+
+        this.arms.forEach(arm => arm.forcedDirection = this.keyboardVector);
+        
+        if (this.keyboardVector.manhattanLength() === 0) {
+            return new Vector2(0, 0);
+        }
+
+        const moveVector = new Vector2(this.keyboardVector.x, this.keyboardVector.y);
+        const forces = this.arms.map(arm => arm.getAttractForce(moveVector));
+        const total = Math.min(4, Utils.addNumbers(forces) * 50);
+        
+        return moveVector.multiplyScalar(total);
+    }
+
+    #releaseArms() {
+        this.arms.forEach(arm => arm.releaseWall());
+    }
+
+    #updateEyes() {
+        this.eyes.forEach(eye => {
+            eye.onFrame();
+        });
+    }
+
+    #updateSize() {
+        const armsSize = this.arms.map(arm => arm.length).reduce((prev, cum) => prev + cum);
+        this.size = (2000 - armsSize) / 50;
+        // this.bodyMesh.scale.x = this.bodyMesh.scale.y = this.bodyMesh.scale.z = this.size * 0.05;
+    }
+
+    initArms(count) {
+        const arms = [];
+        const angleStep = (Math.PI * 2) / count;
+
+        for (let i = 0; i < count; i ++) {
+            arms.push(new Arm(angleStep * i));
+        }
+
+        return arms;
+    }
+
     onKeyDown(code) {
 		switch (code) {
 			case 'LEFT':
@@ -67,6 +168,9 @@ export default class Blob {
 			case 'UP':
 			case 'Z':
 				this.inputMoves.up = 1;
+			break;
+			case 'SPACE':
+				this.#releaseArms();
 			break;
 		}
 	}
@@ -103,86 +207,6 @@ export default class Blob {
         }
 
         return eyes;
-    }
-
-    onFrame() {
-        this.time ++;
-
-        const translationVector = this.#moveFromKeyboard();
-
-        if (this.arms.every(arm => arm.state === 'STATE_IDLE') === true) {
-            this.fallTranslation += 0.2;
-            translationVector.x = 0;
-            translationVector.y = 0;
-        } else {
-            this.fallTranslation = 0;
-        }
-
-        const lastPosX = this.posX;
-        const lastPosY = this.posY;
-
-        this.posX += translationVector.x;
-        this.posY += translationVector.y - this.fallTranslation;
-        // this.posX = UiMouse.worldPosition[0];
-        // this.posY = UiMouse.worldPosition[1];
-
-        this.bodyMesh.position.x = this.posX;
-        this.bodyMesh.position.y = this.posY;
-
-        this.translation[0] = this.posX - lastPosX;
-        this.translation[1] = this.posY - lastPosY;
-        
-        this.moveAngle = Math.atan2(this.translation[1], this.translation[0]);
-        if (Math.abs(this.translation[0]) + Math.abs(this.translation[1]) === 0) {
-            this.moveAngle = 0;
-        }
-
-        this.arms.map(arm => arm.onFrame(this.posX, this.posY));
-        
-        this.#updateSize();
-        this.#updateEyes();
-    }
-
-    #moveFromKeyboard() {
-        this.keyboardVector.x = this.inputMoves.right - this.inputMoves.left;
-        this.keyboardVector.y = this.inputMoves.up - this.inputMoves.down;
-
-        this.arms.forEach(arm => arm.forcedDirection = this.keyboardVector);
-        
-        if (this.keyboardVector.manhattanLength() === 0) {
-            return new Vector2(0, 0);
-        }
-
-        const moveVector = new Vector2(this.keyboardVector.x, this.keyboardVector.y);
-        const forces = this.arms.map(arm => arm.getAttractForce(moveVector));
-        const total = Math.min(5, Utils.addNumbers(forces) * 50);
-        // const total = Utils.addNumbers(forces);
-
-        // return new Vector2(0, 0);
-        return moveVector.multiplyScalar(total);
-    }
-
-    #updateEyes() {
-        this.eyes.forEach(eye => {
-            eye.onFrame();
-        });
-    }
-
-    #updateSize() {
-        const armsSize = this.arms.map(arm => arm.length).reduce((prev, cum) => prev + cum);
-        this.size = (2000 - armsSize) / 50;
-        // this.bodyMesh.scale.x = this.bodyMesh.scale.y = this.bodyMesh.scale.z = this.size * 0.05;
-    }
-
-    initArms(count) {
-        const arms = [];
-        const angleStep = (Math.PI * 2) / count;
-
-        for (let i = 0; i < count; i ++) {
-            arms.push(new Arm(angleStep * i));
-        }
-
-        return arms;
     }
 }
 
@@ -261,9 +285,6 @@ class Arm {
         this.posX = posX + Math.cos(this.angle) * this.startOffset;
         this.posY = posY + Math.sin(this.angle) * this.startOffset;
 
-        if (Utils.random(0, 300) < 1) {
-            Splats.add(Utils.randomize(this.posX, 20), this.posY, 0, 0);
-        }
         this.time += this.timeDirection;
         this.update();
         this.segments = this.#buildSegments();
@@ -274,7 +295,7 @@ class Arm {
         }
 
         if (this.state === Arm.#STATE_RETRACT) {
-            return this.#retract();
+            return this.retract();
         }
 
         if (this.state === Arm.#STATE_DEPLOY) {
@@ -318,9 +339,13 @@ class Arm {
         this.attractDirection.y = Math.sin(this.angle);
 
         if (this.#mustQuiStuck() === true) {
-            this.isStuck = false;
-            this.state = Arm.#STATE_RETRACT;
+            this.releaseWall()
         }
+    }
+
+    releaseWall() {
+        this.isStuck = false;
+        this.state = Arm.#STATE_RETRACT;
     }
 
     #mustQuiStuck() {
@@ -454,7 +479,7 @@ class Arm {
         const dirX = wallPoint.intersection.x - this.targetPosX;
         const dirY = wallPoint.intersection.y - this.targetPosY;
         Stains.add(wallPoint.intersection.x, wallPoint.intersection.y);
-        Splats.add(wallPoint.intersection.x, wallPoint.intersection.y, dirX, dirY);
+        Splats.addBlood(wallPoint.intersection.x, wallPoint.intersection.y, dirX, dirY);
         this.targetPosX = wallPoint.intersection.x;
         this.targetPosY = wallPoint.intersection.y;
         this.isStuck = true;
@@ -471,7 +496,7 @@ class Arm {
         }
     }
 
-    #retract() {
+    retract() {
         let isRetracted = true;
         this.hooks = [];
 
@@ -760,8 +785,8 @@ class Eye {
     }
 
     onFrame() {
-        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translation[0], 0.05);
-        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translation[1], 0.05);
+        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translationDone[0], 0.05);
+        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translationDone[1], 0.05);
         
         this.time += this.timeDirection * 0.05;
 

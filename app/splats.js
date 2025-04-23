@@ -4,19 +4,31 @@ import * as Utils from './utils.js';
 
 let splats = [];
 const pool = [];
-const gravity = 0.05;
+const gravity = 0.1;
 const geometry = new CircleBufferGeometry(4, 8);
-const materials = [
+const bloodMaterials = [
     new MeshBasicMaterial({color: 0xdd0000, transparent: true, opacity: 0.6}),
     new MeshBasicMaterial({color: 0xee0000, transparent: true, opacity: 0.6}),
     new MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.6}),
 ];
+const acidMaterials = [
+    new MeshBasicMaterial({color: 0x00dd00, transparent: true, opacity: 0.6}),
+    new MeshBasicMaterial({color: 0x00ee00, transparent: true, opacity: 0.6}),
+    new MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.6}),
+];
 
-export function add(posX, posY, dirX, dirY) {
-    const count = Utils.random(2, 5);
+export function addBlood(posX, posY, dirX, dirY) {
+    add(posX, posY, dirX, dirY, Utils.random(2, 5), bloodMaterials);
+}
 
+export function addAcid(posX, posY, dirX, dirY, count) {
+    add(posX, posY, dirX, dirY, count, acidMaterials);
+}
+
+function add(posX, posY, dirX, dirY, count, materialList) {
     for (let i = 0; i < count; i ++) {
         const mesh = getCachedSplat();
+        mesh.material = Utils.randomElement(materialList);
         resetSplat(mesh, posX, posY);
         Renderer.add(mesh);
 
@@ -49,7 +61,7 @@ function updateSplat(splat) {
 }
 
 function removeSplatIfNeeded(splat) {
-    if (splat.alpha > 0.3) {
+    if (splat.alpha > 0.5) {
         return true;
     }
 
@@ -68,7 +80,7 @@ function getCachedSplat() {
 }
 
 function createSplat() {
-    const mesh = new Mesh(geometry, Utils.randomElement(materials));
+    const mesh = new Mesh(geometry, Utils.randomElement(bloodMaterials));
     return mesh;
 }
 
@@ -77,5 +89,5 @@ function resetSplat(mesh, posX, posY) {
     mesh.scale.x = mesh.scale.y = mesh.scale.z = size;
     mesh.position.x = Utils.randomize(posX, 5);
     mesh.position.y = Utils.randomize(posY, 5);
-    mesh.position.z = 2;
+    mesh.position.z = 30;
 }

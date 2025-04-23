@@ -4,8 +4,8 @@ export const walls = [];
 
 const wallsPositions = [
     [
-        {x: -250, y: -250},
-        {x: 350, y: -200},
+        {x: -250, y: -280},
+        {x: 350, y: -250},
     ],
     [
         {x: 300, y: -300},
