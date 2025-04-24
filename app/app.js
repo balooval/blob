@@ -8,6 +8,7 @@ import * as Splats from './splats.js';
 import * as Keyboard from './keyboard.js';
 import * as Gamepad from './gamepad.js';
 import * as Camera from './camera.js';
+import * as Debug from './debug.js';
 
 let blob;
 
@@ -35,13 +36,13 @@ export function init() {
 		},
 		
 	]).then(res => {
+		Debug.init();
 		Render.init('viewport');
 		UiMouse.init('viewport');
 		Keyboard.init();
 		Gamepad.init();
 		
-		const wallsMesh = Map.buildMesh();
-		Render.add(wallsMesh);
+		Map.init();
 		blob =  new Blob();
 		Camera.init(Render.camera, blob);
 		onFrame();
