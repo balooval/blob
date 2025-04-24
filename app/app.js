@@ -9,6 +9,7 @@ import * as Keyboard from './keyboard.js';
 import * as Gamepad from './gamepad.js';
 import * as Camera from './camera.js';
 import * as Debug from './debug.js';
+import * as MapReader from './mapReader.js';
 
 let blob;
 

@@ -3,6 +3,7 @@ import * as Utils from './utils.js';
 import * as MapPartition from './mapPartition.js';
 import * as Render from './render3d.js';
 import Bbox from './bbox.js';
+import * as MapReader from './mapReader.js';
 import * as Debug from './debug.js';
 
 export const walls = [];
@@ -12,7 +13,8 @@ export function init() {
     MapPartition.buildGrid(walls);
 }
 
-const wallsPositions = [
+const wallsPositions = MapReader.readMap();
+const wallsPositionsBck = [
     [
         {x: -400, y: -300},
         {x: -400, y: 300},

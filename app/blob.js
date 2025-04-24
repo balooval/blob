@@ -14,13 +14,14 @@ import Bbox from './bbox.js';
 import Arm from './blobArm.js';
 
 const armMaxLength = 150;
+const GRAVITY_ACCEL = 0.2;
 
 export default class Blob {
     constructor() {
         this.acidProduction = 0;
         this.size = 50;
         this.posX = 0;
-        this.posY = 10;
+        this.posY = -100;
         this.positionVector = new Vector2(this.posX, this.posY);
         this.translationDone = [0, 0];
         this.moveAngle = 0;
@@ -71,8 +72,8 @@ export default class Blob {
             this.floatingTranslation[1] = keyboardTranslation.y;
         } else {
             this.fallTranslation += 0.3;
-            this.floatingTranslation[0] *= 0.98;
-            this.floatingTranslation[1] -= 0.2;
+            this.floatingTranslation[0] *= 0.999;
+            this.floatingTranslation[1] -= GRAVITY_ACCEL;
             keyboardTranslation.x = 0;
             keyboardTranslation.y = 0;
         }
