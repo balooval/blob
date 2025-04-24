@@ -25,6 +25,10 @@ function distToSegmentSquared(p, v, w) {
     );
 }
 
+export function addNumbers(numbers) {
+    return numbers.reduce((value, sum) => sum + value, 0);
+}
+
 export function length(sX, sY, dX, dY) {
     Math.sqrt(sqr(sX - dX) + sqr(sY - dY));
 }
@@ -65,6 +69,13 @@ export function lerpPoint(pointA, pointB, percent) {
         lerpFloat(pointA[0], pointB[0], percent),
         lerpFloat(pointA[1], pointB[1], percent),
     ]
+}
+
+export function lerpVector(vectorA, vectorB, percent) {
+    return {
+        x: lerpFloat(vectorA.x, vectorB.x, percent),
+        y: lerpFloat(vectorA.y, vectorB.y, percent),
+    }
 }
 
 export function radians(_degres){
