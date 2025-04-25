@@ -4,65 +4,27 @@ import * as MapPartition from './mapPartition.js';
 import * as Render from './render3d.js';
 import Bbox from './bbox.js';
 import * as MapReader from './mapReader.js';
+import * as ImageLoader from './ImageLoader.js';
 import * as Debug from './debug.js';
 
-export const walls = [];
+const wallsObjects = [];
+const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
 
 export function init() {
+    wallMaterial.map = ImageLoader.get('wall');
+    wallMaterial.needsUpdate = true;
+    buildWalls();
     buildMesh();
-    MapPartition.buildGrid(walls);
+    MapPartition.buildGrid(wallsObjects);
 }
 
-const wallsPositions = MapReader.readMap();
-const wallsPositionsBck = [
-    [
-        {x: -400, y: -300},
-        {x: -400, y: 300},
-    ],
-    [
-        {x: -400, y: -280},
-        {x: 800, y: -250},
-    ],
-    [
-        {x: 400, y: -200},
-        {x: 400, y: 300},
-    ],
-    [
-        {x: -300, y: -300},
-        {x: -300, y: 230},
-    ],
-    [
-        {x: -300, y: 220},
-        {x: 300, y: 150},
-    ],
-    [
-        {x: -400, y: 290},
-        {x: 400, y: 290},
-    ],
-    [
-        {x: -100, y: -100},
-        {x: 410, y: -120},
-    ],
-    [
-        {x: -180, y: -100},
-        {x: -180, y: 52},
-    ],
-    [
-        {x: -182, y: 50},
-        {x: -80, y: 50},
-    ],
-];
+function buildWalls() {
+    const wallsPositions = MapReader.readMap();
 
-wallsPositions.forEach(wallPos => {
-    const angle = Math.atan2(wallPos[1].y - wallPos[0].y, wallPos[1].x - wallPos[0].x);
-    walls.push({
-        id: walls.length,
-        angle: angle,
-        direction: [Math.cos(angle), Math.sin(angle)],
-        positions: wallPos,
-        bbox: calcWallBBox(wallPos),
+    wallsPositions.forEach(wallPos => {
+        wallsObjects.push(new Wall(wallPos[0], wallPos[1]));
     });
-});
+}
 
 export function getWallIntersectionForBbox(segmentToTest, bbox) {
     const wallsMatching = MapPartition.getWallsForBbox(bbox);
@@ -74,39 +36,10 @@ export function getWallIntersectionForBbox(segmentToTest, bbox) {
             segmentToTest[1].x,
             segmentToTest[1].y,
             
-            wall.positions[0].x,
-            wall.positions[0].y,
-            wall.positions[1].x,
-            wall.positions[1].y,
-        );
-
-        if (intersection === null) {
-            return null;
-        }
-
-        return {
-            intersection: intersection,
-            wall: wall,
-            distance: Utils.distance(segmentToTest[0], intersection),
-        }
-    })
-    .filter(hit => hit !== null)
-    .sort((hitA, hitB) => Math.sign(hitA.distance - hitB.distance))
-    .shift();
-}
-
-export function getWallIntersection(segmentToTest) {
-    return walls.map(wall => {
-        const intersection = Utils.segmentIntersection(
-            segmentToTest[0].x,
-            segmentToTest[0].y,
-            segmentToTest[1].x,
-            segmentToTest[1].y,
-            
-            wall.positions[0].x,
-            wall.positions[0].y,
-            wall.positions[1].x,
-            wall.positions[1].y,
+            wall.startPos.x,
+            wall.startPos.y,
+            wall.endPos.x,
+            wall.endPos.y,
         );
 
         if (intersection === null) {
@@ -128,33 +61,41 @@ function buildMesh() {
     let facesIndex = 0;
     const faces = [];
     const positions = [];
-    const width = 7;
+    const uvValues = [];
+    const width = 10;
     const zPos = 0;
 
-    walls.forEach(wallData => {
-        const borderAngle = wallData.angle * -1// - Math.PI * 2;
+    wallsObjects.forEach(wall => {
+        const borderAngle = wall.angle * -1;
         const offsetX = Math.sin(borderAngle) * width;
         const offsetY = Math.cos(borderAngle) * width;
 
-        const startPos = wallData.positions[0];
-        const endPos = wallData.positions[1];
-
         positions.push(
-            startPos.x - offsetX,
-            startPos.y - offsetY,
+            wall.startPos.x - offsetX,
+            wall.startPos.y - offsetY,
             zPos,
 
-            startPos.x + offsetX,
-            startPos.y + offsetY,
+            wall.startPos.x + offsetX,
+            wall.startPos.y + offsetY,
             zPos,
 
-            endPos.x + offsetX,
-            endPos.y + offsetY,
+            wall.endPos.x + offsetX,
+            wall.endPos.y + offsetY,
             zPos,
 
-            endPos.x - offsetX,
-            endPos.y - offsetY,
+            wall.endPos.x - offsetX,
+            wall.endPos.y - offsetY,
             zPos,
+        );
+
+        const uvHor = 1;
+        const uvVert = wall.length / 20;
+
+        uvValues.push(
+            0, 0,
+            uvHor, 0,
+            uvHor, uvVert,
+            0, uvVert,
         );
 
         faces.push(
@@ -170,20 +111,31 @@ function buildMesh() {
     });
 
     const vertices = new Float32Array(positions);
+    const uvCoords = new Float32Array(uvValues);
     const geometry = new BufferGeometry();
     geometry.setIndex(faces);
     geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
 
-    const material = new MeshBasicMaterial({color: '#606060'});
-    const wallsMesh = new Mesh(geometry, material);
+    const wallsMesh = new Mesh(geometry, wallMaterial);
     Render.add(wallsMesh);
 }
 
-function calcWallBBox(wallPos) {
-    return new Bbox(
-        Math.min(wallPos[0].x, wallPos[1].x),
-        Math.max(wallPos[0].x, wallPos[1].x),
-        Math.min(wallPos[0].y, wallPos[1].y),
-        Math.max(wallPos[0].y, wallPos[1].y)
-    );
+class Wall {
+    constructor(startPos, endPos) {
+        this.startPos = startPos;
+        this.endPos = endPos;
+        this.length = Utils.distance(this.startPos, this.endPos);
+        this.angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x);
+        this.direction = [
+            Math.cos(this.angle),
+            Math.sin(this.angle),
+        ];
+        this.bbox = new Bbox(
+            Math.min(this.startPos.x, this.endPos.x),
+            Math.max(this.startPos.x, this.endPos.x),
+            Math.min(this.startPos.y, this.endPos.y),
+            Math.max(this.startPos.y, this.endPos.y)
+        );
+    }
 }

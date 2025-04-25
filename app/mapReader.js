@@ -68,7 +68,6 @@ export function readMap() {
         }
     })
 
-    console.log(walls);
     return walls;
 }
 

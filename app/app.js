@@ -16,6 +16,14 @@ let blob;
 export function init() {
 	ImageLoader.loadBatch([
 		{
+			id: 'debug',
+			url: './assets/debug.png'
+		},
+		{
+			id: 'wall',
+			url: './assets/wall.png'
+		},
+		{
 			id: 'mouth',
 			url: './assets/mouth.png'
 		},
