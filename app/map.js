@@ -8,22 +8,31 @@ import * as ImageLoader from './ImageLoader.js';
 import * as Debug from './debug.js';
 
 const wallsObjects = [];
+const backgrounds = [];
 const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
 
 export function init() {
     wallMaterial.map = ImageLoader.get('wall');
     wallMaterial.needsUpdate = true;
     buildWalls();
-    buildMesh();
+    buildWallsMesh();
+    buildBackgroundMesh();
     MapPartition.buildGrid(wallsObjects);
 }
 
 function buildWalls() {
-    const wallsPositions = MapReader.readMap();
+    const mapDatas = MapReader.readMap();
 
-    wallsPositions.forEach(wallPos => {
+    mapDatas.walls.forEach(wallPos => {
         wallsObjects.push(new Wall(wallPos[0], wallPos[1]));
     });
+
+    mapDatas.backgrounds.forEach(data => {
+        backgrounds.push(new Background(data.x, data.y, data.width, data.height));
+    });
+
+    console.log(backgrounds);
+    
 }
 
 export function getWallIntersectionForBbox(segmentToTest, bbox) {
@@ -57,7 +66,7 @@ export function getWallIntersectionForBbox(segmentToTest, bbox) {
     .shift();
 }
 
-function buildMesh() {
+function buildWallsMesh() {
     let facesIndex = 0;
     const faces = [];
     const positions = [];
@@ -121,6 +130,66 @@ function buildMesh() {
     Render.add(wallsMesh);
 }
 
+function buildBackgroundMesh() {
+    let facesIndex = 0;
+    const faces = [];
+    const positions = [];
+    const uvValues = [];
+    const width = 10;
+    const zPos = -10;
+
+    backgrounds.forEach(background => {
+        positions.push(
+            background.x,
+            background.y,
+            zPos,
+
+            background.x + background.width,
+            background.y,
+            zPos,
+
+            background.x + background.width,
+            background.y + background.height,
+            zPos,
+
+            background.x,
+            background.y + background.height,
+            zPos,
+        );
+
+        const uvHor = background.width / 100;
+        const uvVert = background.height / 100;
+
+        uvValues.push(
+            0, 0,
+            uvHor, 0,
+            uvHor, uvVert,
+            0, uvVert,
+        );
+
+        faces.push(
+            facesIndex + 3,
+            facesIndex + 0,
+            facesIndex + 1,
+
+            facesIndex + 3,
+            facesIndex + 1,
+            facesIndex + 2,
+        );
+        facesIndex += 4;
+    });
+
+    const vertices = new Float32Array(positions);
+    const uvCoords = new Float32Array(uvValues);
+    const geometry = new BufferGeometry();
+    geometry.setIndex(faces);
+    geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
+
+    const backgroundMesh = new Mesh(geometry, wallMaterial);
+    Render.add(backgroundMesh);
+}
+
 class Wall {
     constructor(startPos, endPos) {
         this.startPos = startPos;
@@ -137,5 +206,14 @@ class Wall {
             Math.min(this.startPos.y, this.endPos.y),
             Math.max(this.startPos.y, this.endPos.y)
         );
+    }
+}
+
+class Background {
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
     }
 }

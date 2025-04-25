@@ -55,6 +55,10 @@ export function readMap() {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlStr, "application/xml");
 
+    const datas = {
+      walls: [],
+      backgrounds: [],
+    }
     const walls = [];
 
     [...doc.getElementsByTagName('mxGeometry')].forEach(geometry => {
@@ -62,13 +66,13 @@ export function readMap() {
         const mxPoints = [...geometry.getElementsByTagName('mxPoint')];
         if (mxPoints.length > 0) {
             wall.push(...readLine(mxPoints));
-            walls.push(wall);
+            datas.walls.push(wall);
         } else {
-            walls.push(...readBox(geometry));
+          datas.backgrounds.push(readBox(geometry));
         }
     })
 
-    return walls;
+    return datas;
 }
 
 function readBox(geometry) {
@@ -76,6 +80,12 @@ function readBox(geometry) {
     const y = 0 - parseFloat(geometry.getAttribute('y'));
     const width = parseFloat(geometry.getAttribute('width'));
     const height = parseFloat(geometry.getAttribute('height'));
+    return {
+      x: x,
+      y: y - height,
+      width: width,
+      height: height,
+    };
     return [
         [
             {
