@@ -6,6 +6,7 @@ export function readMap(mapFileContent) {
     const datas = {
       walls: [],
       backgrounds: [],
+      blocks: [],
     }
     const walls = [];
 
@@ -22,9 +23,13 @@ export function readMap(mapFileContent) {
             datas.walls.push(...readLine(mxPoints));
         } else {
           const hasWalls = getStyleValue(cell, 'strokeColor') !== 'none';
+          const color = getStyleValue(cell, 'fillColor');
+          console.log('color', color);
+          
           if (hasWalls === true) {
-            datas.walls.push(...readBox(geometry));
-            datas.backgrounds.push(readBackground(geometry));
+            datas.blocks.push(readBox(geometry));
+            // datas.walls.push(...readBox(geometry));
+            // datas.backgrounds.push(readBackground(geometry));
           } else {
             datas.backgrounds.push(readBackground(geometry));
           }
@@ -134,7 +139,7 @@ function readLine(mxPoints) {
   return mxPoints.map(nextPoint => {
     const currentPoint = previousPoint;
     previousPoint = nextPoint;
-    const test = [
+    return [
       {
         x: parseFloat(currentPoint.getAttribute('x')),
         y: 0 - parseFloat(currentPoint.getAttribute('y')),
@@ -144,8 +149,6 @@ function readLine(mxPoints) {
         y: 0 - parseFloat(nextPoint.getAttribute('y')),
       },
     ];
-    
-    return test;
     
 });
 

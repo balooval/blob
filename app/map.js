@@ -8,6 +8,7 @@ import * as ImageLoader from './ImageLoader.js';
 import * as Debug from './debug.js';
 
 const wallsObjects = [];
+const blocksObjects = [];
 const backgrounds = [];
 const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
 const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
@@ -19,6 +20,7 @@ export function init() {
     wallMaterial.needsUpdate = true;
     buildWalls();
     buildWallsMesh();
+    buildBlocksMesh();
     buildBackgroundMesh();
     MapPartition.buildGrid(wallsObjects);
 }
@@ -32,6 +34,10 @@ export function loadMap() {
 function buildWalls() {
     const mapDatas = MapReader.readMap(mapFileContent);
 
+    mapDatas.blocks.forEach(blockData => {
+        blocksObjects.push(new Block(blockData));
+    });
+
     mapDatas.walls.forEach(wallPos => {
         wallsObjects.push(new Wall(wallPos[0], wallPos[1]));
     });
@@ -39,9 +45,6 @@ function buildWalls() {
     mapDatas.backgrounds.forEach(data => {
         backgrounds.push(new Background(data.x, data.y, data.width, data.height));
     });
-
-    console.log(backgrounds);
-    
 }
 
 export function getWallIntersectionForBbox(segmentToTest, bbox) {
@@ -248,6 +251,122 @@ function buildWallsMesh() {
     Render.add(wallsMesh);
 }
 
+function buildBlocksMesh() {
+    let facesIndex = 0;
+    const faces = [];
+    const positions = [];
+    const uvValues = [];
+    const zPosFront = -20;
+    const zPosBack = -50;
+
+    blocksObjects.forEach(block => {
+
+        block.points.forEach(point => {
+            positions.push(
+                point.x,
+                point.y,
+                zPosFront,
+            );
+        });
+        block.points.forEach(point => {
+            positions.push(
+                point.x,
+                point.y,
+                zPosFront,
+            );
+        });
+        block.points.forEach(point => {
+            positions.push(
+                point.x,
+                point.y,
+                zPosBack,
+            );
+        });
+
+        const uvHor = 0.5;
+        const uvVert = 0.5;
+
+        uvValues.push(
+            // FACE
+            0, 0,
+            uvHor, 0,
+            uvHor, uvVert,
+            0, uvVert,
+
+            // BORDERS
+            0.5, 0,
+            1, 0,
+            0.5, 0,
+            1, 0,
+
+            0.5, 0.9,
+            1, 0.9,
+            0.5, 0.9,
+            1, 0.9,
+        );
+
+        faces.push(
+            facesIndex + 3,
+            facesIndex + 1,
+            facesIndex + 0,
+
+            facesIndex + 3,
+            facesIndex + 2,
+            facesIndex + 1,
+
+
+            // TOP
+            facesIndex + 9,
+            facesIndex + 5,
+            facesIndex + 10,
+
+            facesIndex + 10,
+            facesIndex + 5,
+            facesIndex + 6,
+
+
+            // BOTTOM
+           facesIndex + 8,
+           facesIndex + 7,
+           facesIndex + 4,
+
+           facesIndex + 8,
+           facesIndex + 11,
+           facesIndex + 7,
+
+           // RIGHT
+            facesIndex + 7,
+            facesIndex + 11,
+            facesIndex + 6,
+
+            facesIndex + 11,
+            facesIndex + 10,
+            facesIndex + 6,
+            
+            // LEFT
+            facesIndex + 4,
+            facesIndex + 9,
+            facesIndex + 8,
+
+            facesIndex + 4,
+            facesIndex + 5,
+            facesIndex + 9,
+        );
+
+        facesIndex += 12;
+    });
+
+    const vertices = new Float32Array(positions);
+    const uvCoords = new Float32Array(uvValues);
+    const geometry = new BufferGeometry();
+    geometry.setIndex(faces);
+    geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
+
+    const wallsMesh = new Mesh(geometry, wallMaterial);
+    Render.add(wallsMesh);
+}
+
 function buildBackgroundMesh() {
     let facesIndex = 0;
     const faces = [];
@@ -332,5 +451,27 @@ class Background {
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+}
+
+class Block {
+    constructor(blockDatas) {
+        this.points = blockDatas.map(coord => coord[0]);
+        console.log(this.points);
+        
+        // this.startPos = startPos;
+        // this.endPos = endPos;
+        // this.length = Utils.distance(this.startPos, this.endPos);
+        // this.angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x);
+        // this.direction = [
+        //     Math.cos(this.angle),
+        //     Math.sin(this.angle),
+        // ];
+        // this.bbox = new Bbox(
+        //     Math.min(this.startPos.x, this.endPos.x),
+        //     Math.max(this.startPos.x, this.endPos.x),
+        //     Math.min(this.startPos.y, this.endPos.y),
+        //     Math.max(this.startPos.y, this.endPos.y)
+        // );
     }
 }
