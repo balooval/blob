@@ -71,7 +71,7 @@ export function add(object) {
 
 export function draw() {
 	renderer.setRenderTarget(null);
-	renderer.setClearColor(0x202020, 1);
+	renderer.setClearColor(0x020f19, 1);
 	renderer.clear();
 	renderer.render(scene, camera);
 }

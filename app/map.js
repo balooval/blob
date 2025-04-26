@@ -11,6 +11,7 @@ const wallsObjects = [];
 const backgrounds = [];
 const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
 const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
+let mapFileContent = '';
 
 export function init() {
     wallMaterial.map = ImageLoader.get('wall');
@@ -22,8 +23,14 @@ export function init() {
     MapPartition.buildGrid(wallsObjects);
 }
 
+export function loadMap() {
+    return fetch('./assets/map.drawio.xml')
+    .then(response => response.text())
+    .then(xmlString => mapFileContent = xmlString);
+}
+
 function buildWalls() {
-    const mapDatas = MapReader.readMap();
+    const mapDatas = MapReader.readMap(mapFileContent);
 
     mapDatas.walls.forEach(wallPos => {
         wallsObjects.push(new Wall(wallPos[0], wallPos[1]));
@@ -68,13 +75,35 @@ export function getWallIntersectionForBbox(segmentToTest, bbox) {
     .shift();
 }
 
+export function getWallIntersectionToCircle(posX, posY, diameter, bbox) {
+    const wallsMatching = MapPartition.getWallsForBbox(bbox);
+
+    return wallsMatching.some(wall => {
+        const distance = Utils.circleDistFromLineSeg(
+            posX,
+            posY,
+            wall.startPos.x,
+            wall.startPos.y,
+            wall.endPos.x,
+            wall.endPos.y,
+        );
+
+        if (distance > diameter) {
+            return false;
+        }
+
+        return true;
+    });
+}
+
 function buildWallsMesh() {
     let facesIndex = 0;
     const faces = [];
     const positions = [];
     const uvValues = [];
     const width = 10;
-    const zPos = 0;
+    const zPosFront = 0;
+    const zPosBack = -50;
 
     wallsObjects.forEach(wall => {
         const borderAngle = wall.angle * -1;
@@ -82,31 +111,79 @@ function buildWallsMesh() {
         const offsetY = Math.cos(borderAngle) * width;
 
         positions.push(
+            //FACE
             wall.startPos.x - offsetX,
             wall.startPos.y - offsetY,
-            zPos,
+            zPosFront,
 
             wall.startPos.x + offsetX,
             wall.startPos.y + offsetY,
-            zPos,
+            zPosFront,
 
             wall.endPos.x + offsetX,
             wall.endPos.y + offsetY,
-            zPos,
+            zPosFront,
 
             wall.endPos.x - offsetX,
             wall.endPos.y - offsetY,
-            zPos,
+            zPosFront,
+
+
+            // BORDERS
+            wall.startPos.x - offsetX,
+            wall.startPos.y - offsetY,
+            zPosFront,
+
+            wall.startPos.x + offsetX,
+            wall.startPos.y + offsetY,
+            zPosFront,
+
+            wall.endPos.x + offsetX,
+            wall.endPos.y + offsetY,
+            zPosFront,
+
+            wall.endPos.x - offsetX,
+            wall.endPos.y - offsetY,
+            zPosFront,
+
+
+            wall.startPos.x - offsetX,
+            wall.startPos.y - offsetY,
+            zPosBack,
+
+            wall.startPos.x + offsetX,
+            wall.startPos.y + offsetY,
+            zPosBack,
+
+            wall.endPos.x + offsetX,
+            wall.endPos.y + offsetY,
+            zPosBack,
+
+            wall.endPos.x - offsetX,
+            wall.endPos.y - offsetY,
+            zPosBack,
         );
 
-        const uvHor = 1;
+        const uvHor = 0.5;
         const uvVert = wall.length / 20;
 
         uvValues.push(
+            // FACE
             0, 0,
             uvHor, 0,
             uvHor, uvVert,
             0, uvVert,
+
+            // BORDERS
+            0.5, 0,
+            1, 0,
+            0.5, 0,
+            1, 0,
+
+            0.5, 0.9,
+            1, 0.9,
+            0.5, 0.9,
+            1, 0.9,
         );
 
         faces.push(
@@ -117,8 +194,47 @@ function buildWallsMesh() {
             facesIndex + 3,
             facesIndex + 2,
             facesIndex + 1,
+
+
+            // TOP, OK
+            facesIndex + 9,
+            facesIndex + 5,
+            facesIndex + 10,
+
+            facesIndex + 10,
+            facesIndex + 5,
+            facesIndex + 6,
+
+
+            // BOTTOM, OK
+           facesIndex + 8,
+           facesIndex + 7,
+           facesIndex + 4,
+
+           facesIndex + 8,
+           facesIndex + 11,
+           facesIndex + 7,
+
+           // RIGHT, OK
+            facesIndex + 7,
+            facesIndex + 11,
+            facesIndex + 6,
+
+            facesIndex + 11,
+            facesIndex + 10,
+            facesIndex + 6,
+            
+            // LEFT, OK
+            facesIndex + 4,
+            facesIndex + 9,
+            facesIndex + 8,
+
+            facesIndex + 4,
+            facesIndex + 5,
+            facesIndex + 9,
         );
-        facesIndex += 4;
+
+        facesIndex += 12;
     });
 
     const vertices = new Float32Array(positions);
@@ -137,7 +253,7 @@ function buildBackgroundMesh() {
     const faces = [];
     const positions = [];
     const uvValues = [];
-    const zPos = -20;
+    const zPos = -50;
 
     backgrounds.forEach(background => {
         positions.push(

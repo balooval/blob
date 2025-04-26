@@ -407,7 +407,7 @@ class Arm {
         const positions = [];
         const normals = [];
         const uv = [];
-        const z = Utils.random(5, 15);
+        const z = Utils.random(-5, 5);
         
         for (let i = 0; i < segmentsCount + 1; i ++) {
             positions.push(

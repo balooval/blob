@@ -86,7 +86,7 @@ export default class Blob {
             this.posY + this.floatingTranslation[1],
         ];
 
-        const wallIntersection = this.#getWallImpact(
+        const wallIntersection = this.#hitWall(
             lastPosX, lastPosY,
             nexPos[0], nexPos[1],
         );
@@ -141,7 +141,7 @@ export default class Blob {
         */
     }
 
-    #getWallImpact(startX, startY, endX, endY) {
+    #hitWall(startX, startY, endX, endY) {
         const moveSegment = [
             {
                 x: startX,
@@ -153,7 +153,7 @@ export default class Blob {
             },
         ];
 
-        return Map.getWallIntersectionForBbox(moveSegment, this.bbox);
+        return Map.getWallIntersectionToCircle(endX, endY, 20, this.bbox);
     }
 
     #moveFromKeyboard() {

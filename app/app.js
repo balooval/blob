@@ -14,6 +14,14 @@ import * as MapReader from './mapReader.js';
 let blob;
 
 export function init() {
+	loadMap();
+}
+
+function loadMap() {
+	Map.loadMap().then(res => loadtextures());
+}
+
+function loadtextures() {
 	ImageLoader.loadBatch([
 		{
 			id: 'debug',
@@ -49,17 +57,21 @@ export function init() {
 		},
 		
 	]).then(res => {
-		Debug.init();
-		Render.init('viewport');
-		UiMouse.init('viewport');
-		Keyboard.init();
-		Gamepad.init();
-		
-		Map.init();
-		blob =  new Blob();
-		Camera.init(Render.camera, blob);
-		onFrame();
+		onRessourcesLoaded();
 	});
+}
+
+function onRessourcesLoaded() {
+	Debug.init();
+	Render.init('viewport');
+	UiMouse.init('viewport');
+	Keyboard.init();
+	Gamepad.init();
+	
+	Map.init();
+	blob =  new Blob();
+	Camera.init(Render.camera, blob);
+	onFrame();
 }
 
 function onFrame() {
