@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } from "../vendor/three.module.js";
+import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial, MeshPhysicalMaterial } from "../vendor/three.module.js";
 import * as Utils from './utils.js';
 import * as MapPartition from './mapPartition.js';
 import * as Render from './render3d.js';
@@ -9,10 +9,10 @@ import * as ImageLoader from './ImageLoader.js';
 const wallsObjects = [];
 const blocksObjects = [];
 const backgrounds = [];
-const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
-const woodenBoxMaterial = new MeshBasicMaterial({color: '#ffffff'});
-const tilesMaterial = new MeshBasicMaterial({color: '#ffffff'});
-const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
+const wallMaterial = new MeshPhysicalMaterial({color: '#ffffff'});
+const woodenBoxMaterial = new MeshPhysicalMaterial({color: '#ffffff'});
+const tilesMaterial = new MeshPhysicalMaterial({color: '#ffffff'});
+const backgroundMaterial = new MeshPhysicalMaterial({color: '#909090'});
 const colorToMaterialIndex = {
     '#f8cecc': 1, //woodenBoxMaterial
     '#dae8fc': 2, //tilesMaterial
@@ -253,6 +253,7 @@ function buildWallsMesh() {
     geometry.setIndex(faces);
     geometry.setAttribute('position', new BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
+    geometry.computeVertexNormals();
 
     const wallsMesh = new Mesh(geometry, wallMaterial);
     Render.add(wallsMesh);
@@ -264,7 +265,7 @@ function buildBlocksMesh() {
     const faces = [];
     const positions = [];
     const uvValues = [];
-    const zPosFront = 10;
+    const zPosFront = 5;
     const zPosBack = -50;
 
     const facesGroups = [];
@@ -386,6 +387,7 @@ function buildBlocksMesh() {
     geometry.setIndex(faces);
     geometry.setAttribute('position', new BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
+    geometry.computeVertexNormals();
 
     facesGroups.forEach(group => {
         geometry.addGroup(group.start, group.count, group.index);
@@ -449,6 +451,7 @@ function buildBackgroundMesh() {
     geometry.setIndex(faces);
     geometry.setAttribute('position', new BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
+    geometry.computeVertexNormals();
 
     const backgroundMesh = new Mesh(geometry, backgroundMaterial);
     Render.add(backgroundMesh);
