@@ -5,24 +5,31 @@ import * as Render from './render3d.js';
 import Bbox from './bbox.js';
 import * as MapReader from './mapReader.js';
 import * as ImageLoader from './ImageLoader.js';
-import * as Debug from './debug.js';
 
 const wallsObjects = [];
 const blocksObjects = [];
 const backgrounds = [];
 const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const woodenBoxMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const tilesMaterial = new MeshBasicMaterial({color: '#ffffff'});
 const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
+const colorToMaterialIndex = {
+    '#f8cecc': 1, //woodenBoxMaterial
+    '#dae8fc': 2, //tilesMaterial
+};
 let mapFileContent = '';
 
 export function init() {
     wallMaterial.map = ImageLoader.get('wall');
     backgroundMaterial.map = ImageLoader.get('background');
+    woodenBoxMaterial.map = ImageLoader.get('wodden-box');
+    tilesMaterial.map = ImageLoader.get('tiles');
     wallMaterial.needsUpdate = true;
     buildWalls();
     buildWallsMesh();
     buildBlocksMesh();
     buildBackgroundMesh();
-    MapPartition.buildGrid(wallsObjects);
+    MapPartition.buildGrid([...wallsObjects, ...blocksObjects]);
 }
 
 export function loadMap() {
@@ -48,19 +55,19 @@ function buildWalls() {
 }
 
 export function getWallIntersectionForBbox(segmentToTest, bbox) {
-    const wallsMatching = MapPartition.getWallsForBbox(bbox);
+    const collisionSegments = MapPartition.getCollisionSegmentsForBbox(bbox);
 
-    return wallsMatching.map(wall => {
+    return collisionSegments.map(collisionSegment => {
         const intersection = Utils.segmentIntersection(
             segmentToTest[0].x,
             segmentToTest[0].y,
             segmentToTest[1].x,
             segmentToTest[1].y,
             
-            wall.startPos.x,
-            wall.startPos.y,
-            wall.endPos.x,
-            wall.endPos.y,
+            collisionSegment.startPos.x,
+            collisionSegment.startPos.y,
+            collisionSegment.endPos.x,
+            collisionSegment.endPos.y,
         );
 
         if (intersection === null) {
@@ -69,7 +76,7 @@ export function getWallIntersectionForBbox(segmentToTest, bbox) {
 
         return {
             intersection: intersection,
-            wall: wall,
+            wall: collisionSegment,
             distance: Utils.distance(segmentToTest[0], intersection),
         }
     })
@@ -79,16 +86,16 @@ export function getWallIntersectionForBbox(segmentToTest, bbox) {
 }
 
 export function getWallIntersectionToCircle(posX, posY, diameter, bbox) {
-    const wallsMatching = MapPartition.getWallsForBbox(bbox);
+    const collisionSegments = MapPartition.getCollisionSegmentsForBbox(bbox);
 
-    return wallsMatching.some(wall => {
+    return collisionSegments.some(collisionSegment => {
         const distance = Utils.circleDistFromLineSeg(
             posX,
             posY,
-            wall.startPos.x,
-            wall.startPos.y,
-            wall.endPos.x,
-            wall.endPos.y,
+            collisionSegment.startPos.x,
+            collisionSegment.startPos.y,
+            collisionSegment.endPos.x,
+            collisionSegment.endPos.y,
         );
 
         if (distance > diameter) {
@@ -105,7 +112,7 @@ function buildWallsMesh() {
     const positions = [];
     const uvValues = [];
     const width = 10;
-    const zPosFront = 0;
+    const zPosFront = 10;
     const zPosBack = -50;
 
     wallsObjects.forEach(wall => {
@@ -253,11 +260,14 @@ function buildWallsMesh() {
 
 function buildBlocksMesh() {
     let facesIndex = 0;
+    let groupIndex = 0;
     const faces = [];
     const positions = [];
     const uvValues = [];
-    const zPosFront = -20;
+    const zPosFront = 10;
     const zPosBack = -50;
+
+    const facesGroups = [];
 
     blocksObjects.forEach(block => {
 
@@ -268,6 +278,7 @@ function buildBlocksMesh() {
                 zPosFront,
             );
         });
+
         block.points.forEach(point => {
             positions.push(
                 point.x,
@@ -275,6 +286,7 @@ function buildBlocksMesh() {
                 zPosFront,
             );
         });
+
         block.points.forEach(point => {
             positions.push(
                 point.x,
@@ -283,8 +295,8 @@ function buildBlocksMesh() {
             );
         });
 
-        const uvHor = 0.5;
-        const uvVert = 0.5;
+        const uvHor = block.bbox.width / 100;
+        const uvVert = block.bbox.height / 100;
 
         uvValues.push(
             // FACE
@@ -353,6 +365,18 @@ function buildBlocksMesh() {
             facesIndex + 9,
         );
 
+        facesGroups.push({
+            index: colorToMaterialIndex[block.color],
+            start: groupIndex,
+            count: 6,
+        });
+        facesGroups.push({
+            index: 0,
+            start: groupIndex + 6,
+            count: 24,
+        });
+
+        groupIndex += 30;
         facesIndex += 12;
     });
 
@@ -363,7 +387,11 @@ function buildBlocksMesh() {
     geometry.setAttribute('position', new BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
 
-    const wallsMesh = new Mesh(geometry, wallMaterial);
+    facesGroups.forEach(group => {
+        geometry.addGroup(group.start, group.count, group.index);
+    });
+
+    const wallsMesh = new Mesh(geometry, [wallMaterial, woodenBoxMaterial, tilesMaterial]);
     Render.add(wallsMesh);
 }
 
@@ -430,6 +458,9 @@ class Wall {
     constructor(startPos, endPos) {
         this.startPos = startPos;
         this.endPos = endPos;
+        this.collisionSegments = [
+            new CollisionSegment(startPos, endPos),
+        ];
         this.length = Utils.distance(this.startPos, this.endPos);
         this.angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x);
         this.direction = [
@@ -442,6 +473,10 @@ class Wall {
             Math.min(this.startPos.y, this.endPos.y),
             Math.max(this.startPos.y, this.endPos.y)
         );
+    }
+
+    getCollisionSegments() {
+        return this.collisionSegments;
     }
 }
 
@@ -456,22 +491,32 @@ class Background {
 
 class Block {
     constructor(blockDatas) {
-        this.points = blockDatas.map(coord => coord[0]);
-        console.log(this.points);
+        this.color = blockDatas.color;
+        this.points = blockDatas.positions.map(coord => coord[0]);
+        this.collisionSegments = blockDatas.positions.map(coord => new CollisionSegment(coord[0], coord[1]));
+
+        // const minX = 9999;
+        const minX = this.points.reduce((min, point) => Math.min(min, point.x), 9999);
+        const maxX = this.points.reduce((max, point) => Math.max(max, point.x), -9999);
+        const minY = this.points.reduce((min, point) => Math.min(min, point.y), 9999);
+        const maxY = this.points.reduce((max, point) => Math.max(max, point.y), -9999);
         
-        // this.startPos = startPos;
-        // this.endPos = endPos;
-        // this.length = Utils.distance(this.startPos, this.endPos);
-        // this.angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x);
-        // this.direction = [
-        //     Math.cos(this.angle),
-        //     Math.sin(this.angle),
-        // ];
-        // this.bbox = new Bbox(
-        //     Math.min(this.startPos.x, this.endPos.x),
-        //     Math.max(this.startPos.x, this.endPos.x),
-        //     Math.min(this.startPos.y, this.endPos.y),
-        //     Math.max(this.startPos.y, this.endPos.y)
-        // );
+        this.bbox = new Bbox(
+            minX,
+            maxX,
+            minY,
+            maxY,
+        );
+    }
+
+    getCollisionSegments() {
+        return this.collisionSegments;
+    }
+}
+
+class CollisionSegment {
+    constructor(startPos, endPos) {
+        this.startPos = startPos;
+        this.endPos = endPos;
     }
 }

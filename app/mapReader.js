@@ -24,10 +24,13 @@ export function readMap(mapFileContent) {
         } else {
           const hasWalls = getStyleValue(cell, 'strokeColor') !== 'none';
           const color = getStyleValue(cell, 'fillColor');
-          console.log('color', color);
           
           if (hasWalls === true) {
-            datas.blocks.push(readBox(geometry));
+            const block = {
+              positions: readBox(geometry),
+              color: color,
+            };
+            datas.blocks.push(block);
             // datas.walls.push(...readBox(geometry));
             // datas.backgrounds.push(readBackground(geometry));
           } else {

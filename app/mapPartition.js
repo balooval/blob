@@ -9,11 +9,13 @@ export function buildGrid(walls) {
     createCells(walls);
 }
 
-export function getWallsForBbox(bbox) {
+export function getCollisionSegmentsForBbox(bbox) {
     return [...new Set(
         cells
         .filter(cell => cell.bbox.intersectBBox(bbox))
         .map(cell => cell.walls)
+        .flat()
+        .map(wall => wall.getCollisionSegments())
         .flat()
     )];
 }

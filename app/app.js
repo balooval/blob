@@ -32,6 +32,14 @@ function loadtextures() {
 			url: './assets/wall.png'
 		},
 		{
+			id: 'wodden-box',
+			url: './assets/wodden-box.png'
+		},
+		{
+			id: 'tiles',
+			url: './assets/tiles.png'
+		},
+		{
 			id: 'background',
 			url: './assets/background.png'
 		},
