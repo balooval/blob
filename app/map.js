@@ -10,9 +10,11 @@ import * as Debug from './debug.js';
 const wallsObjects = [];
 const backgrounds = [];
 const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
 
 export function init() {
     wallMaterial.map = ImageLoader.get('wall');
+    backgroundMaterial.map = ImageLoader.get('background');
     wallMaterial.needsUpdate = true;
     buildWalls();
     buildWallsMesh();
@@ -135,8 +137,7 @@ function buildBackgroundMesh() {
     const faces = [];
     const positions = [];
     const uvValues = [];
-    const width = 10;
-    const zPos = -10;
+    const zPos = -20;
 
     backgrounds.forEach(background => {
         positions.push(
@@ -157,8 +158,8 @@ function buildBackgroundMesh() {
             zPos,
         );
 
-        const uvHor = background.width / 100;
-        const uvVert = background.height / 100;
+        const uvHor = background.width / 300;
+        const uvVert = background.height / 300;
 
         uvValues.push(
             0, 0,
@@ -186,7 +187,7 @@ function buildBackgroundMesh() {
     geometry.setAttribute('position', new BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new BufferAttribute(uvCoords, 2));
 
-    const backgroundMesh = new Mesh(geometry, wallMaterial);
+    const backgroundMesh = new Mesh(geometry, backgroundMaterial);
     Render.add(backgroundMesh);
 }
 

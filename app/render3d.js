@@ -2,6 +2,7 @@ import {
 	AmbientLight,
 	Mesh,
 	OrthographicCamera,
+	PerspectiveCamera,
 	PlaneGeometry,
 	PointLight,
 	PointLightHelper,
@@ -30,7 +31,14 @@ export function init(elmtId) {
 	const mainElmt = document.getElementById(elmtId);
 	renderer = new WebGLRenderer({antialias: true});
 	mainElmt.appendChild(renderer.domElement);
-	camera = new OrthographicCamera(cameraWidth / -2, cameraWidth / 2, cameraHeight / 2, cameraHeight / -2, 1, 1000);
+	
+	// camera = new OrthographicCamera(cameraWidth / -2, cameraWidth / 2, cameraHeight / 2, cameraHeight / -2, 1, 1000);
+	// camera.position.set(0, 0, 100);
+	// camera.lookAt(new Vector3(0, 0, 0));
+	
+	camera = new PerspectiveCamera(75, 4/3);
+	camera.position.set(0, 0, 400);
+	camera.lookAt(new Vector3(0, 0, 0));
 
 	window.onresize = function () {
 		renderer.setSize(mainElmt.clientWidth, mainElmt.clientWidth / ratio);
@@ -40,8 +48,6 @@ export function init(elmtId) {
 
 	window.onresize();
 	scene = new Scene();
-	camera.position.set(0, 0, 100);
-	camera.lookAt(new Vector3(0, 0, 0));
 	scene.add(camera);
 
 	const geoPlane = new PlaneGeometry(worldWidth * 2, worldHeight * 2);

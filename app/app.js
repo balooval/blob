@@ -24,6 +24,10 @@ export function init() {
 			url: './assets/wall.png'
 		},
 		{
+			id: 'background',
+			url: './assets/background.png'
+		},
+		{
 			id: 'mouth',
 			url: './assets/mouth.png'
 		},
