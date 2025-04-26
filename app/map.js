@@ -144,26 +144,41 @@ function buildWallsMesh() {
             wall.startPos.y - offsetY,
             zPosFront,
 
-            wall.startPos.x + offsetX,
-            wall.startPos.y + offsetY,
-            zPosFront,
-
-            wall.endPos.x + offsetX,
-            wall.endPos.y + offsetY,
-            zPosFront,
-
-            wall.endPos.x - offsetX,
-            wall.endPos.y - offsetY,
-            zPosFront,
-
-
             wall.startPos.x - offsetX,
             wall.startPos.y - offsetY,
             zPosBack,
 
             wall.startPos.x + offsetX,
             wall.startPos.y + offsetY,
+            zPosFront,
+
+            wall.startPos.x + offsetX,
+            wall.startPos.y + offsetY,
             zPosBack,
+
+
+
+            wall.startPos.x + offsetX,
+            wall.startPos.y + offsetY,
+            zPosFront,
+
+            wall.startPos.x + offsetX,
+            wall.startPos.y + offsetY,
+            zPosBack,
+
+            wall.endPos.x + offsetX,
+            wall.endPos.y + offsetY,
+            zPosFront,
+
+            wall.endPos.x + offsetX,
+            wall.endPos.y + offsetY,
+            zPosBack,
+
+
+
+            wall.endPos.x + offsetX,
+            wall.endPos.y + offsetY,
+            zPosFront,
 
             wall.endPos.x + offsetX,
             wall.endPos.y + offsetY,
@@ -171,6 +186,28 @@ function buildWallsMesh() {
 
             wall.endPos.x - offsetX,
             wall.endPos.y - offsetY,
+            zPosFront,
+
+            wall.endPos.x - offsetX,
+            wall.endPos.y - offsetY,
+            zPosBack,
+
+
+
+            wall.endPos.x - offsetX,
+            wall.endPos.y - offsetY,
+            zPosFront,
+
+            wall.endPos.x - offsetX,
+            wall.endPos.y - offsetY,
+            zPosBack,
+
+            wall.startPos.x - offsetX,
+            wall.startPos.y - offsetY,
+            zPosFront,
+
+            wall.startPos.x - offsetX,
+            wall.startPos.y - offsetY,
             zPosBack,
         );
 
@@ -185,14 +222,24 @@ function buildWallsMesh() {
             0, uvVert,
 
             // BORDERS
-            0.5, 0,
+            uvHor, 0,
+            uvHor, 0.9,
             1, 0,
-            0.5, 0,
-            1, 0,
-
-            0.5, 0.9,
             1, 0.9,
-            0.5, 0.9,
+
+            uvHor, 0,
+            uvHor, 0.9,
+            1, 0,
+            1, 0.9,
+
+            uvHor, 0,
+            uvHor, 0.9,
+            1, 0,
+            1, 0.9,
+
+            uvHor, 0,
+            uvHor, 0.9,
+            1, 0,
             1, 0.9,
         );
 
@@ -207,44 +254,44 @@ function buildWallsMesh() {
 
 
             // TOP, OK
-            facesIndex + 9,
-            facesIndex + 5,
-            facesIndex + 10,
-
-            facesIndex + 10,
-            facesIndex + 5,
-            facesIndex + 6,
-
-
-            // BOTTOM, OK
-           facesIndex + 8,
-           facesIndex + 7,
-           facesIndex + 4,
-
-           facesIndex + 8,
-           facesIndex + 11,
-           facesIndex + 7,
-
-           // RIGHT, OK
+            facesIndex + 4,
             facesIndex + 7,
-            facesIndex + 11,
-            facesIndex + 6,
+            facesIndex + 5,
 
-            facesIndex + 11,
-            facesIndex + 10,
+            facesIndex + 4,
             facesIndex + 6,
+            facesIndex + 7,
+
+            
+            // BOTTOM, OK
+            facesIndex + 8,
+            facesIndex + 10,
+            facesIndex + 9,
+            
+            facesIndex + 9,
+            facesIndex + 10,
+            facesIndex + 11,
+            
+            // RIGHT, OK
+            facesIndex + 12,
+            facesIndex + 14,
+            facesIndex + 13,
+            
+            facesIndex + 13,
+            facesIndex + 14,
+            facesIndex + 15,
             
             // LEFT, OK
-            facesIndex + 4,
-            facesIndex + 9,
-            facesIndex + 8,
+            facesIndex + 17,
+            facesIndex + 16,
+            facesIndex + 19,
 
-            facesIndex + 4,
-            facesIndex + 5,
-            facesIndex + 9,
+            facesIndex + 19,
+            facesIndex + 16,
+            facesIndex + 18,
         );
 
-        facesIndex += 12;
+        facesIndex += 20;
     });
 
     const vertices = new Float32Array(positions);
@@ -280,21 +327,27 @@ function buildBlocksMesh() {
             );
         });
 
-        block.points.forEach(point => {
+        const pointsLength = block.points.length;
+        for (let i = 0; i < pointsLength; i ++) {
+            const nextIndex = (i + 1) % pointsLength;
             positions.push(
-                point.x,
-                point.y,
+                block.points[i].x,
+                block.points[i].y,
                 zPosFront,
-            );
-        });
 
-        block.points.forEach(point => {
-            positions.push(
-                point.x,
-                point.y,
+                block.points[i].x,
+                block.points[i].y,
+                zPosBack,
+
+                block.points[nextIndex].x,
+                block.points[nextIndex].y,
+                zPosFront,
+
+                block.points[nextIndex].x,
+                block.points[nextIndex].y,
                 zPosBack,
             );
-        });
+        }
 
         const uvHor = block.bbox.width / 100;
         const uvVert = block.bbox.height / 100;
@@ -308,14 +361,24 @@ function buildBlocksMesh() {
 
             // BORDERS
             0.5, 0,
+            0.5, 1,
             1, 0,
-            0.5, 0,
-            1, 0,
+            1, 1,
 
-            0.5, 0.9,
-            1, 0.9,
-            0.5, 0.9,
-            1, 0.9,
+            0.5, 0,
+            0.5, 1,
+            1, 0,
+            1, 1,
+
+            0.5, 0,
+            0.5, 1,
+            1, 0,
+            1, 1,
+
+            0.5, 0,
+            0.5, 1,
+            1, 0,
+            1, 1,
         );
 
         faces.push(
@@ -328,42 +391,42 @@ function buildBlocksMesh() {
             facesIndex + 1,
 
 
-            // TOP
-            facesIndex + 9,
-            facesIndex + 5,
-            facesIndex + 10,
-
-            facesIndex + 10,
-            facesIndex + 5,
-            facesIndex + 6,
-
-
-            // BOTTOM
-           facesIndex + 8,
-           facesIndex + 7,
-           facesIndex + 4,
-
-           facesIndex + 8,
-           facesIndex + 11,
-           facesIndex + 7,
-
-           // RIGHT
+            // TOP, OK
+            facesIndex + 4,
             facesIndex + 7,
-            facesIndex + 11,
-            facesIndex + 6,
-
-            facesIndex + 11,
-            facesIndex + 10,
-            facesIndex + 6,
-            
-            // LEFT
-            facesIndex + 4,
-            facesIndex + 9,
-            facesIndex + 8,
-
-            facesIndex + 4,
             facesIndex + 5,
+
+            facesIndex + 4,
+            facesIndex + 6,
+            facesIndex + 7,
+
+            
+            // BOTTOM, OK
+            facesIndex + 8,
+            facesIndex + 10,
             facesIndex + 9,
+            
+            facesIndex + 9,
+            facesIndex + 10,
+            facesIndex + 11,
+            
+            // RIGHT, OK
+            facesIndex + 12,
+            facesIndex + 14,
+            facesIndex + 13,
+            
+            facesIndex + 13,
+            facesIndex + 14,
+            facesIndex + 15,
+            
+            // LEFT, OK
+            facesIndex + 17,
+            facesIndex + 16,
+            facesIndex + 19,
+
+            facesIndex + 19,
+            facesIndex + 16,
+            facesIndex + 18,
         );
 
         facesGroups.push({
@@ -378,8 +441,9 @@ function buildBlocksMesh() {
         });
 
         groupIndex += 30;
-        facesIndex += 12;
+        facesIndex += 20;
     });
+
 
     const vertices = new Float32Array(positions);
     const uvCoords = new Float32Array(uvValues);
@@ -393,6 +457,7 @@ function buildBlocksMesh() {
         geometry.addGroup(group.start, group.count, group.index);
     });
 
+    // const wallsMesh = new Mesh(geometry, woodenBoxMaterial);
     const wallsMesh = new Mesh(geometry, [wallMaterial, woodenBoxMaterial, tilesMaterial]);
     Render.add(wallsMesh);
 }

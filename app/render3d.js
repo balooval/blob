@@ -54,9 +54,9 @@ export function init(elmtId) {
 	mousePositionMesh = new Mesh(geoPlane);
 	// scene.add(mousePositionMesh);
 
-	const light = new PointLight(0xffffff, 2, 1000, 1);
-	light.position.set(0, 0, 50);
-	scene.add(light);
+	// const light = new PointLight(0xffffff, 2, 1000, 1);
+	// light.position.set(0, 0, 0);
+	// scene.add(light);
 	
 	// const helper = new PointLightHelper(light);
 	// scene.add(helper);
