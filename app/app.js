@@ -28,6 +28,22 @@ function loadtextures() {
 			url: './assets/debug.png'
 		},
 		{
+			id: 'side',
+			url: './assets/side.png'
+		},
+		{
+			id: 'grid',
+			url: './assets/grid.png'
+		},
+		{
+			id: 'scifi-lab',
+			url: './assets/scifi-lab.png'
+		},
+		{
+			id: 'background-labo-a',
+			url: './assets/background-labo-a.png'
+		},
+		{
 			id: 'wall',
 			url: './assets/wall.png'
 		},

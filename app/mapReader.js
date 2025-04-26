@@ -8,8 +8,7 @@ export function readMap(mapFileContent) {
       walls: [],
       backgrounds: [],
       blocks: [],
-    }
-    const walls = [];
+    };
 
     [...doc.getElementsByTagName('mxCell')].forEach(cell => {
         const geometry = [...cell.getElementsByTagName('mxGeometry')].pop();
@@ -19,26 +18,27 @@ export function readMap(mapFileContent) {
         const wall = [];
         // const mxPoints = [...geometry.getElementsByTagName('mxPoint')];
         const mxPoints = readLinePoints(geometry);
+        const color = getStyleValue(cell, 'fillColor') ?? 'none';
         
         if (mxPoints.length > 0) {
-            datas.walls.push(...readLine(mxPoints));
+            // console.log(color);
+            readLine(mxPoints).forEach(wall => {
+              wall.color = color;
+              datas.walls.push(wall);
+            });
+            
         } else {
           const hasWalls = getStyleValue(cell, 'strokeColor') !== 'none';
-          const color = getStyleValue(cell, 'fillColor');
           const rotation = getStyleValue(cell, 'rotation') ?? 0;
           
           if (hasWalls === true) {
-            const block = {
-              positions: readBox(geometry, rotation),
-              color: color,
-            };
-            console.log(block.positions);
-            
+            const block = readBox(geometry, rotation);
+            block.color = color;
             datas.blocks.push(block);
-            // datas.walls.push(...readBox(geometry));
-            // datas.backgrounds.push(readBackground(geometry));
           } else {
-            datas.backgrounds.push(readBackground(geometry));
+            const background = readBackground(geometry);
+            background.color = color;
+            datas.backgrounds.push(background);
           }
         }
     })
@@ -82,7 +82,6 @@ function getStyleValue(element, prop) {
 function readBox(geometry, rotation) {
     const angle = Utils.radians(rotation) * -1;
 
-    
     const x = parseFloat(geometry.getAttribute('x'));
     const y = 0 - parseFloat(geometry.getAttribute('y'));
     const width = parseFloat(geometry.getAttribute('width'));
@@ -103,48 +102,52 @@ function readBox(geometry, rotation) {
     const bottomLeftY = Math.round(centerY - (sin * marginHor) - (cos * marginVert));
     const bottomRightX = Math.round(centerX + (cos * marginHor) + (sin * marginVert));
     const bottomRightY = Math.round(centerY + (sin * marginHor) - (cos * marginVert));
-    return [
-      [
-          {
-              x: topLeftX,
-              y: topLeftY,
-          },
-          {
-              x: topRightX,
-              y: topRightY,
-          },
+    return {
+      width: width,
+      height: height,
+      positions: [
+        [
+            {
+                x: topLeftX,
+                y: topLeftY,
+            },
+            {
+                x: topRightX,
+                y: topRightY,
+            },
+        ],
+        [
+            {
+                x: topRightX,
+                y: topRightY,
+            },
+            {
+                x: bottomRightX,
+                y: bottomRightY,
+            },
+        ],
+        [
+            {
+                x: bottomRightX,
+                y: bottomRightY,
+            },
+            {
+                x: bottomLeftX,
+                y: bottomLeftY,
+            },
+        ],
+        [
+            {
+                x: bottomLeftX,
+                y: bottomLeftY,
+            },
+            {
+                x: topLeftX,
+                y: topLeftY,
+            },
+        ],
       ],
-      [
-          {
-              x: topRightX,
-              y: topRightY,
-          },
-          {
-              x: bottomRightX,
-              y: bottomRightY,
-          },
-      ],
-      [
-          {
-              x: bottomRightX,
-              y: bottomRightY,
-          },
-          {
-              x: bottomLeftX,
-              y: bottomLeftY,
-          },
-      ],
-      [
-          {
-              x: bottomLeftX,
-              y: bottomLeftY,
-          },
-          {
-              x: topLeftX,
-              y: topLeftY,
-          },
-      ],
-    ];
+    };
 
     return [
         [
@@ -208,24 +211,19 @@ function readLine(mxPoints) {
   return mxPoints.map(nextPoint => {
     const currentPoint = previousPoint;
     previousPoint = nextPoint;
-    return [
-      {
-        x: parseFloat(currentPoint.getAttribute('x')),
-        y: 0 - parseFloat(currentPoint.getAttribute('y')),
-      },
-      {
-        x: parseFloat(nextPoint.getAttribute('x')),
-        y: 0 - parseFloat(nextPoint.getAttribute('y')),
-      },
-    ];
+    return {
+      positions: [
+        {
+          x: parseFloat(currentPoint.getAttribute('x')),
+          y: 0 - parseFloat(currentPoint.getAttribute('y')),
+        },
+        {
+          x: parseFloat(nextPoint.getAttribute('x')),
+          y: 0 - parseFloat(nextPoint.getAttribute('y')),
+        },
+      ],
+    };
     
-});
-
-  return mxPoints.map(point => {
-      return {
-          x: parseFloat(point.getAttribute('x')),
-          y: 0 - parseFloat(point.getAttribute('y')),
-      };
   });
 }
 

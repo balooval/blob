@@ -1,5 +1,6 @@
 import {
 	NearestFilter,
+	LinearFilter,
 	RepeatWrapping,
 	TextureLoader
 } from '../vendor/three.module.js';
@@ -27,8 +28,6 @@ function loadNextTexture(resolveCallback) {
 		texture => {
 			texture.wrapS = RepeatWrapping;
 			texture.wrapT = RepeatWrapping;
-			texture.magFilter = NearestFilter;
-			texture.minFilter = NearestFilter;
 			textLoaded[nextText.id] = texture;
 			
 			if (imagesList.length == 0) {
