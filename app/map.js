@@ -9,10 +9,10 @@ import * as ImageLoader from './ImageLoader.js';
 const wallsObjects = [];
 const blocksObjects = [];
 const backgrounds = [];
-const wallMaterial = new MeshPhysicalMaterial({color: '#ffffff'});
-const woodenBoxMaterial = new MeshPhysicalMaterial({color: '#ffffff'});
-const tilesMaterial = new MeshPhysicalMaterial({color: '#ffffff'});
-const backgroundMaterial = new MeshPhysicalMaterial({color: '#909090'});
+const wallMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const woodenBoxMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const tilesMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
 const colorToMaterialIndex = {
     '#f8cecc': 1, //woodenBoxMaterial
     '#dae8fc': 2, //tilesMaterial
@@ -361,24 +361,24 @@ function buildBlocksMesh() {
 
             // BORDERS
             0.5, 0,
-            0.5, 1,
+            0.5, 0.9,
             1, 0,
             1, 1,
 
             0.5, 0,
-            0.5, 1,
+            0.5, 0.9,
             1, 0,
-            1, 1,
+            1, 0.9,
 
             0.5, 0,
-            0.5, 1,
+            0.5, 0.9,
             1, 0,
-            1, 1,
+            1, 0.9,
 
             0.5, 0,
-            0.5, 1,
+            0.5, 0.9,
             1, 0,
-            1, 1,
+            1, 0.9,
         );
 
         faces.push(

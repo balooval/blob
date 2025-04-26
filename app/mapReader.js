@@ -1,3 +1,4 @@
+import * as Utils from './utils.js';
 
 export function readMap(mapFileContent) {
     const parser = new DOMParser();
@@ -24,12 +25,15 @@ export function readMap(mapFileContent) {
         } else {
           const hasWalls = getStyleValue(cell, 'strokeColor') !== 'none';
           const color = getStyleValue(cell, 'fillColor');
+          const rotation = getStyleValue(cell, 'rotation') ?? 0;
           
           if (hasWalls === true) {
             const block = {
-              positions: readBox(geometry),
+              positions: readBox(geometry, rotation),
               color: color,
             };
+            console.log(block.positions);
+            
             datas.blocks.push(block);
             // datas.walls.push(...readBox(geometry));
             // datas.backgrounds.push(readBackground(geometry));
@@ -75,11 +79,73 @@ function getStyleValue(element, prop) {
   return props[prop] ?? null;
 }
 
-function readBox(geometry) {
+function readBox(geometry, rotation) {
+    const angle = Utils.radians(rotation) * -1;
+
+    
     const x = parseFloat(geometry.getAttribute('x'));
     const y = 0 - parseFloat(geometry.getAttribute('y'));
     const width = parseFloat(geometry.getAttribute('width'));
     const height = parseFloat(geometry.getAttribute('height'));
+    const centerX = Utils.lerpFloat(x, x + width, 0.5);
+    const centerY = Utils.lerpFloat(y, y - height, 0.5);
+    const marginHor = width / 2;
+    const marginVert = height / 2;
+    
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    // const borderAngle = wall.angle * -1;
+    const topLeftX = Math.round(centerX - (cos * marginHor) - (sin * marginVert));
+    const topLeftY = Math.round(centerY - (sin * marginHor) + (cos * marginVert));
+    const topRightX = Math.round(centerX + (cos * marginHor) - (sin * marginVert));
+    const topRightY = Math.round(centerY + (sin * marginHor) + (cos * marginVert));
+    const bottomLeftX = Math.round(centerX - (cos * marginHor) + (sin * marginVert));
+    const bottomLeftY = Math.round(centerY - (sin * marginHor) - (cos * marginVert));
+    const bottomRightX = Math.round(centerX + (cos * marginHor) + (sin * marginVert));
+    const bottomRightY = Math.round(centerY + (sin * marginHor) - (cos * marginVert));
+    return [
+      [
+          {
+              x: topLeftX,
+              y: topLeftY,
+          },
+          {
+              x: topRightX,
+              y: topRightY,
+          },
+      ],
+      [
+          {
+              x: topRightX,
+              y: topRightY,
+          },
+          {
+              x: bottomRightX,
+              y: bottomRightY,
+          },
+      ],
+      [
+          {
+              x: bottomRightX,
+              y: bottomRightY,
+          },
+          {
+              x: bottomLeftX,
+              y: bottomLeftY,
+          },
+      ],
+      [
+          {
+              x: bottomLeftX,
+              y: bottomLeftY,
+          },
+          {
+              x: topLeftX,
+              y: topLeftY,
+          },
+      ],
+    ];
+
     return [
         [
             {
