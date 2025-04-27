@@ -20,8 +20,9 @@ export default class Blob {
     constructor() {
         this.acidProduction = 0;
         this.size = 50;
-        this.posX = 0;
-        this.posY = -100;
+        const startPos = Map.getStartPosition();
+        this.posX = startPos[0];
+        this.posY = startPos[1];
         this.positionVector = new Vector2(this.posX, this.posY);
         this.translationDone = [0, 0];
         this.moveAngle = 0;
@@ -105,12 +106,6 @@ export default class Blob {
         this.positionVector.y = this.posY;
 
         this.bbox.translate(this.posX, this.posY);
-        // console.log(this.bbox);
-        
-
-
-        // this.posX += this.floatingTranslation[0];
-        // this.posY += this.floatingTranslation[1];
 
         this.bodyMesh.position.x = this.posX;
         this.bodyMesh.position.y = this.posY;

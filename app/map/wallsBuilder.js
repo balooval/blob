@@ -53,10 +53,6 @@ export function buildWallsMesh(walls) {
         return res;
     }, {});
 
-    console.log(wallsByType);
-    
-    
-    
     for (const type in wallsByType) {
         const mesh = buildMeshType(type, wallsByType[type]);
         Render.add(mesh);

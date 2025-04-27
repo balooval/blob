@@ -9,8 +9,20 @@ import * as WallsBuilder from './map/wallsBuilder.js';
 const wallsObjects = [];
 const blocksObjects = [];
 const backgrounds = [];
+let playerPosition = [0, -100];
 
 let mapFileContent = '';
+
+
+export function getStartPosition() {
+  return playerPosition;
+}
+
+export function loadMap() {
+    return fetch('./assets/map.drawio.xml')
+    .then(response => response.text())
+    .then(xmlString => mapFileContent = xmlString);
+}
 
 export function init() {
     buildWalls();
@@ -20,14 +32,10 @@ export function init() {
     MapPartition.buildGrid([...wallsObjects, ...blocksObjects]);
 }
 
-export function loadMap() {
-    return fetch('./assets/map.drawio.xml')
-    .then(response => response.text())
-    .then(xmlString => mapFileContent = xmlString);
-}
-
 function buildWalls() {
     const mapDatas = MapReader.readMap(mapFileContent);
+    playerPosition = mapDatas.playerPosition;
+
 
     mapDatas.blocks.forEach(blockData => {
         blocksObjects.push(new Block(blockData));

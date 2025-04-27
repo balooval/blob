@@ -4,21 +4,14 @@ import * as Render from './render3d.js';
 
 let camera;
 let target;
-let light;
 let helper;
 
 export function init(sceneCamera, targetToFollow) {
 	camera = sceneCamera;
 	target = targetToFollow;
-	light = new DirectionalLight(0xffffff, 1);
-	light.position.z = 200;
-	// light.lookAt(new Vector3(0, 0, 0));
-	light.target = target.bodyMesh;
-	
-	Render.add(light);
-	
-	helper = new DirectionalLightHelper(light);
-	// Render.add(helper);
+
+	camera.position.x = target.positionVector.x;
+	camera.position.y = target.positionVector.y;
 }
 
 export function onFrame() {
@@ -39,11 +32,6 @@ export function onFrame() {
 	camera.position.y = newPos.y;
 	*/
 
-	light.position.x = target.positionVector.x;
-	light.position.y = target.positionVector.y;
-
-	helper.update();
-
 	const cameraPos2D = new Vector2(camera.position.x, camera.position.y)
 	const distance = cameraPos2D.distanceTo(target.positionVector);
 
@@ -54,9 +42,4 @@ export function onFrame() {
 	const newPos = Utils.lerpVector(camera.position, target.positionVector, 0.02);
 	camera.position.x = newPos.x;
 	camera.position.y = newPos.y;
-	
-	// light.lookAt(new Vector3(newPos.x, newPos.y, 0));
-	// light.target = target.bodyMesh;
-
-	
 }

@@ -1,5 +1,6 @@
 import * as Utils from './utils.js';
 
+
 export function readMap(mapFileContent) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(mapFileContent, "application/xml");
@@ -8,6 +9,7 @@ export function readMap(mapFileContent) {
       walls: [],
       backgrounds: [],
       blocks: [],
+      playerPosition: [0, -100],
     };
 
     [...doc.getElementsByTagName('mxCell')].forEach(cell => {
@@ -18,6 +20,14 @@ export function readMap(mapFileContent) {
         const wall = [];
         // const mxPoints = [...geometry.getElementsByTagName('mxPoint')];
         const mxPoints = readLinePoints(geometry);
+        const shape = getStyleValue(cell, 'shape') ?? 'none';
+
+        if (shape === 'umlActor') {
+          datas.playerPosition[0] = Utils.lerpFloat(parseFloat(geometry.getAttribute('x')), parseFloat(geometry.getAttribute('x')) + parseFloat(geometry.getAttribute('width')), 0.5);
+          datas.playerPosition[1] = 0 - Utils.lerpFloat(parseFloat(geometry.getAttribute('y')), parseFloat(geometry.getAttribute('y')) + parseFloat(geometry.getAttribute('height')), 0.5);
+          return;
+        }
+        
         const color = getStyleValue(cell, 'fillColor') ?? 'none';
         
         if (mxPoints.length > 0) {
