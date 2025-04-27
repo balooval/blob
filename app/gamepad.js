@@ -8,6 +8,8 @@ export function init() {
 }
 
 gameControl.on('connect', gamepad => {
+    console.log('Gamepad connected');
+    
     mainGamepad = gamepad;
     console.log(mainGamepad);
     

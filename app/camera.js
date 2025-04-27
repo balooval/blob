@@ -10,15 +10,15 @@ export function init(sceneCamera, targetToFollow) {
 	camera = sceneCamera;
 	target = targetToFollow;
 
-	camera.position.x = target.positionVector.x;
-	camera.position.y = target.positionVector.y;
+	camera.position.x = target.vectorPosition.x;
+	camera.position.y = target.vectorPosition.y;
 }
 
 export function onFrame() {
 	/*
 	const targetDestination = new Vector2(
-		target.positionVector.x + target.translationDone[0] * 100,
-		target.positionVector.y + target.translationDone[1] * 100,
+		target.vectorPosition.x + target.translationDone.x * 100,
+		target.vectorPosition.y + target.translationDone.y * 100,
 	)
 	const cameraPos2D = new Vector2(camera.position.x, camera.position.y)
 	const distance = cameraPos2D.distanceTo(targetDestination);
@@ -33,13 +33,13 @@ export function onFrame() {
 	*/
 
 	const cameraPos2D = new Vector2(camera.position.x, camera.position.y)
-	const distance = cameraPos2D.distanceTo(target.positionVector);
+	const distance = cameraPos2D.distanceTo(target.vectorPosition);
 
 	if (distance < 100) {
 		return;
 	}
 
-	const newPos = Utils.lerpVector(camera.position, target.positionVector, 0.02);
+	const newPos = Utils.lerpVector(camera.position, target.vectorPosition, 0.02);
 	camera.position.x = newPos.x;
 	camera.position.y = newPos.y;
 }

@@ -24,8 +24,7 @@ class Arm {
         this.blob = blob;
         this.state = Arm.#STATE_IDLE;
         this.startOffset = 2;
-        this.posX = 0;
-        this.posY = 0;
+        this.vectorPosition = new Vector2(0, 0);
         this.viewAngle = angle;
         this.forcedDirection = new Vector2();
         this.baseAngle = angle;
@@ -40,8 +39,11 @@ class Arm {
         this.color = new Color(Utils.random(0.8, 1), 0, 0);
         this.segmentsCount = 10;
         this.attractDirection = new Vector2();
-        this.targetPosX = this.posX + Math.cos(this.angle) * this.length;
-        this.targetPosY = this.posY + Math.sin(this.angle) * this.length;
+        this.direction = new Vector2(0, 0);
+        this.targetPosition = new Vector2(
+            this.vectorPosition.x + Math.cos(this.angle) * this.length,
+            this.vectorPosition.y + Math.sin(this.angle) * this.length
+        );
 
         this.wallPoint = {intersection: {x: 0, y: 0}};
         this.isStuck = false;
@@ -49,7 +51,6 @@ class Arm {
         this.timeDirection = Utils.random(-0.1, 0.1);
         this.hsl = [1, Utils.random(35, 80), 40];
         this.eyeClosed = true;
-        this.direction = [0, 0];
         this.softness = Utils.randomize(4, 2) / this.baseWidth;
 
         this.segments = this.#buildSegments();
@@ -80,8 +81,8 @@ class Arm {
     }
 
     onFrame(posX, posY) {
-        this.posX = posX + Math.cos(this.angle) * this.startOffset;
-        this.posY = posY + Math.sin(this.angle) * this.startOffset;
+        this.vectorPosition.x = posX + Math.cos(this.angle) * this.startOffset;
+        this.vectorPosition.y = posY + Math.sin(this.angle) * this.startOffset;
 
         this.time += this.timeDirection;
         this.update();
@@ -104,9 +105,10 @@ class Arm {
     }
 
     update() {
-        this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
+        this.length = this.vectorPosition.distanceTo(this.targetPosition);
         this.eyeClosed = Math.abs(this.time % 100) < 15;
-        this.direction = [Math.cos(this.viewAngle), Math.sin(this.viewAngle)];
+        this.direction.x = Math.cos(this.viewAngle)
+        this.direction.y = Math.sin(this.viewAngle);
         const gap = this.maxLength - this.baseLength;
         this.elongationPercent =  (this.length - this.baseLength) / gap;
         
@@ -130,8 +132,8 @@ class Arm {
     }
 
     #updateStuckState() {
-        this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
-        this.angle = Utils.pointsAngle([this.posX, this.posY], [this.targetPosX, this.targetPosY]);
+        this.length = this.vectorPosition.distanceTo(this.targetPosition);
+        this.angle = Utils.pointsAngle([this.vectorPosition.x, this.vectorPosition.y], [this.targetPosition.x, this.targetPosition.y]);
 
         this.attractDirection.x = Math.cos(this.angle);
         this.attractDirection.y = Math.sin(this.angle);
@@ -200,8 +202,8 @@ class Arm {
         // const forcedLength = 5 + this.forcedDirection.length() * 5;
         
         const waveLenght = Math.abs(Math.cos(this.time * 0.01) * (this.baseLength * 5));
-        this.targetPosX = this.posX + Math.cos(this.viewAngle) * waveLenght;
-        this.targetPosY = this.posY + Math.sin(this.viewAngle) * waveLenght;
+        this.targetPosition.x = this.vectorPosition.x + Math.cos(this.viewAngle) * waveLenght;
+        this.targetPosition.y = this.vectorPosition.y + Math.sin(this.viewAngle) * waveLenght;
 
         if (this.blob.searchForWalls === true) {
             this.#scanForDeploy();
@@ -224,19 +226,16 @@ class Arm {
 
     #getViewSegment() {
         return [
+            this.vectorPosition,
             {
-                x: this.posX,
-                y: this.posY,
-            },
-            {
-                x: this.posX + Math.cos(this.viewAngle) * this.viewLength,
-                y: this.posY + Math.sin(this.viewAngle) * this.viewLength,
+                x: this.vectorPosition.x + Math.cos(this.viewAngle) * this.viewLength,
+                y: this.vectorPosition.y + Math.sin(this.viewAngle) * this.viewLength,
             },
         ];
     }
 
     #deploy() {
-        const distance = Utils.distance({x: this.posX, y: this.posY}, this.wallPoint.intersection);
+        const distance = Utils.distance(this.vectorPosition, this.wallPoint.intersection);
 
         if (distance > this.maxLength) {
             this.state = Arm.#STATE_RETRACT;
@@ -244,28 +243,28 @@ class Arm {
         }
 
         const targetPoint = Utils.lerpPoint(
-            [this.targetPosX, this.targetPosY],
+            [this.targetPosition.x, this.targetPosition.y],
             [this.wallPoint.intersection.x, this.wallPoint.intersection.y],
             0.5
         );
         
-        this.targetPosX = targetPoint[0];
-        this.targetPosY = targetPoint[1];
-        this.length = Utils.distance({x: this.posX, y: this.posY}, {x: this.targetPosX, y: this.targetPosY});
+        this.targetPosition.x = targetPoint[0];
+        this.targetPosition.y = targetPoint[1];
+        this.length = this.vectorPosition.distanceTo(this.targetPosition);
 
-        const diff = Utils.distance({x: this.targetPosX, y: this.targetPosY}, this.wallPoint.intersection);
+        const diff = Utils.distance(this.targetPosition, this.wallPoint.intersection);
         if (diff < 5) {
             this.#stuckToWall(this.wallPoint);
         }
     }
 
     #stuckToWall(wallPoint) {
-        const dirX = wallPoint.intersection.x - this.targetPosX;
-        const dirY = wallPoint.intersection.y - this.targetPosY;
+        const dirX = wallPoint.intersection.x - this.targetPosition.x;
+        const dirY = wallPoint.intersection.y - this.targetPosition.y;
         Stains.add(wallPoint.intersection.x, wallPoint.intersection.y);
         Splats.addBlood(wallPoint.intersection.x, wallPoint.intersection.y, dirX, dirY);
-        this.targetPosX = wallPoint.intersection.x;
-        this.targetPosY = wallPoint.intersection.y;
+        this.targetPosition.x = wallPoint.intersection.x;
+        this.targetPosition.y = wallPoint.intersection.y;
         this.isStuck = true;
         this.state = Arm.#STATE_STUCKED;
     }
@@ -279,8 +278,8 @@ class Arm {
             isRetracted = false;
         }
 
-        this.targetPosX = this.posX + Math.cos(this.angle) * this.length;
-        this.targetPosY = this.posY + Math.sin(this.angle) * this.length;
+        this.targetPosition.x = this.vectorPosition.x + Math.cos(this.angle) * this.length;
+        this.targetPosition.y = this.vectorPosition.y + Math.sin(this.angle) * this.length;
 
         const angleDiff = Utils.angleDiff(this.baseAngle, this.angle);
         if (Math.abs(angleDiff) > 0.001) {
@@ -304,9 +303,10 @@ class Arm {
             waveReduction = 0.7;
         }
 
-        const targetAngle = Math.atan2(this.targetPosY - this.posY, this.targetPosX - this.posX);
+        const targetAngle = Math.atan2(this.targetPosition.y - this.vectorPosition.y, this.targetPosition.x - this.vectorPosition.x);
+        
         const perpAngle = targetAngle + Math.PI / 2;
-        let previousPos = [this.posX, this.posY];
+        let previousPos = [this.vectorPosition.x, this.vectorPosition.y];
         
         let ecart = 0;
         let distanceWidth = 1;
@@ -314,11 +314,9 @@ class Arm {
 
         
         for (let i = 0; i < this.segmentsCount; i ++) {
-            const test = 1 + (Math.tan(i * percentStep) * 2);
-
             const point = Utils.lerpPoint(
-                [this.posX, this.posY],
-                [this.targetPosX, this.targetPosY],
+                [this.vectorPosition.x, this.vectorPosition.y],
+                [this.targetPosition.x, this.targetPosition.y],
                 percentStep * (i + 1)
             );
             
@@ -452,10 +450,10 @@ class Arm {
     }
 
     #updageSegmentsGeometry() {
-        this.meshSegments.position.x = this.posX;
-        this.meshSegments.position.y = this.posY;
-        this.meshStraight.position.x = this.posX;
-        this.meshStraight.position.y = this.posY;
+        this.meshSegments.position.x = this.vectorPosition.x;
+        this.meshSegments.position.y = this.vectorPosition.y;
+        this.meshStraight.position.x = this.vectorPosition.x;
+        this.meshStraight.position.y = this.vectorPosition.y;
 
         let uvAttribute = this.meshSegments.geometry.attributes.uv;
         let uvValues = uvAttribute.array;
@@ -468,10 +466,10 @@ class Arm {
             
             const faceWidth = Math.max(0.15, Math.round(this.segments[i].width * 0.6));
 
-            const startX = this.segments[i].start.x - this.posX;
-            const startY = this.segments[i].start.y - this.posY;
-            const endX = this.segments[i].end.x - this.posX;
-            const endY = this.segments[i].end.y - this.posY;
+            const startX = this.segments[i].start.x - this.vectorPosition.x;
+            const startY = this.segments[i].start.y - this.vectorPosition.y;
+            const endX = this.segments[i].end.x - this.vectorPosition.x;
+            const endY = this.segments[i].end.y - this.vectorPosition.y;
             const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
             const borderAngle = directionAngle * -1 - Math.PI * 2;
 
@@ -510,10 +508,10 @@ class Arm {
         const startWidth = Math.max(0.3, this.segments[0].width * 0.2);
         const endWidth = Math.max(0.3, this.segments[this.segmentsCount - 1].width * 0.3);
 
-        const startX = this.segments[0].start.x - this.posX;
-        const startY = this.segments[0].start.y - this.posY;
-        const endX = this.segments[this.segmentsCount - 1].end.x - this.posX;
-        const endY = this.segments[this.segmentsCount - 1].end.y - this.posY;
+        const startX = this.segments[0].start.x - this.vectorPosition.x;
+        const startY = this.segments[0].start.y - this.vectorPosition.y;
+        const endX = this.segments[this.segmentsCount - 1].end.x - this.vectorPosition.x;
+        const endY = this.segments[this.segmentsCount - 1].end.y - this.vectorPosition.y;
         const directionAngle = Utils.pointsAngle([startX, startY], [endX, endY]);
         const borderAngle = directionAngle * -1 - Math.PI * 2;
 
