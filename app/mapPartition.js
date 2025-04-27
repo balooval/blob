@@ -4,9 +4,9 @@ const cellSize = 200;
 const cells = [];
 let mapBbox;
 
-export function buildGrid(walls) {
+export function buildGrid(walls, fogZones) {
     mapBbox = getMapBBox(walls);
-    createCells(walls);
+    createCells(walls, fogZones);
 }
 
 export function getCollisionSegmentsForBbox(bbox) {
@@ -20,7 +20,16 @@ export function getCollisionSegmentsForBbox(bbox) {
     )];
 }
 
-function createCells(walls) {
+export function getFogZonesForBbox(bbox) {
+    return [...new Set(
+        cells
+        .filter(cell => cell.bbox.intersectBBox(bbox))
+        .map(cell => cell.fogZones)
+        .flat()
+    )];
+}
+
+function createCells(walls, fogZones) {
     const horCount = Math.ceil(mapBbox.width / cellSize);
     const vertCount = Math.ceil(mapBbox.height / cellSize);
 
@@ -28,6 +37,7 @@ function createCells(walls) {
         for (let y = 0; y < vertCount; y ++) {
             const cell = new Cell(mapBbox.left + x * cellSize, mapBbox.bottom + y * cellSize);
             cell.addWalls(walls);
+            cell.addFogZones(fogZones);
             cells.push(cell);
         }
     }
@@ -44,9 +54,15 @@ class Cell {
     constructor(x, y) {
         this.bbox = new Bbox(x, x + cellSize, y, y + cellSize);
         this.walls = [];
+        this.fogZones = [];
     }
 
     addWalls(walls) {
         this.walls = walls.filter(wall => this.bbox.intersectBBox(wall.bbox));
+    }
+
+    addFogZones(fogZones) {
+        this.fogZones = fogZones.filter(fogZone => this.bbox.intersectBBox(fogZone.bbox));
+        
     }
 }

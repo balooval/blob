@@ -5,10 +5,13 @@ import * as MapReader from './mapReader.js';
 import * as BlocksBuilder from './map/blocksBuilder.js';
 import * as BackgroundBuilder from './map/backgroundBuilder.js';
 import * as WallsBuilder from './map/wallsBuilder.js';
+import * as Render from './render3d.js';
+import * as Debug from './debug.js';
 
 const wallsObjects = [];
 const blocksObjects = [];
 const backgrounds = [];
+const fogZones = [];
 let playerPosition = [0, -100];
 
 let mapFileContent = '';
@@ -25,17 +28,22 @@ export function loadMap() {
 }
 
 export function init() {
+    BackgroundBuilder.init();
     buildWalls();
     WallsBuilder.buildWallsMesh(wallsObjects);
     BlocksBuilder.buildBlocksMesh(blocksObjects);
     BackgroundBuilder.buildBackgroundMesh(backgrounds);
-    MapPartition.buildGrid([...wallsObjects, ...blocksObjects]);
+    MapPartition.buildGrid([...wallsObjects, ...blocksObjects], fogZones);
 }
 
 function buildWalls() {
     const mapDatas = MapReader.readMap(mapFileContent);
     playerPosition = mapDatas.playerPosition;
 
+
+    mapDatas.fogZones.forEach(fogZoneData => {
+        fogZones.push(new FogZone(fogZoneData));
+    });
 
     mapDatas.blocks.forEach(blockData => {
         blocksObjects.push(new Block(blockData));
@@ -48,6 +56,15 @@ function buildWalls() {
     mapDatas.backgrounds.forEach(data => {
         backgrounds.push(new Background(data));
     });
+}
+
+
+export function getFogZoneIntersectionForBbox(bbox) {
+    const fogZones = MapPartition.getFogZonesForBbox(bbox);
+
+    return fogZones
+    .filter(fogZone => fogZone.isOpaque === true)
+    .filter(fogZone => fogZone.bbox.intersect(bbox));
 }
 
 export function getWallIntersectionForBbox(segmentToTest, bbox) {
@@ -139,6 +156,32 @@ class Background {
         this.width = data.width;
         this.height = data.height;
         this.type = BackgroundBuilder.getColorType(data.color);
+    }
+}
+
+class FogZone {
+    constructor(data) {
+        this.x = data.x;
+        this.y = data.y;
+        this.width = data.width;
+        this.height = data.height;
+
+        this.isOpaque = true;
+
+        this.bbox = new Bbox(
+            this.x,
+            this.x + this.width,
+            this.y,
+            this.y + this.height,
+        );
+
+        this.mesh = BackgroundBuilder.buildMeshType(BackgroundBuilder.TYPE_DEBUG, [this]);
+        Render.add(this.mesh);
+    }
+    
+    dissolve() {
+        this.isOpaque = false;
+        Render.remove(this.mesh);
     }
 }
 

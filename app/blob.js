@@ -13,6 +13,7 @@ import * as ImageLoader from './ImageLoader.js';
 import Bbox from './bbox.js';
 import Arm from './blobArm.js';
 import * as Splats from './splats.js';
+import * as Debug from './debug.js';
 
 const ARM_MAX_LENGTH = 150;
 const GRAVITY_ACCEL = 0.2;
@@ -22,7 +23,7 @@ const ARM_COUNT = 16;
 export default class Blob {
     constructor() {
         this.acidProduction = 0;
-        this.size = 50;
+        this.size = 20;
         const startPos = Map.getStartPosition();
         this.vectorPosition = new Vector2(startPos[0], startPos[1]);
         this.lastPosition = this.vectorPosition.clone();
@@ -35,8 +36,9 @@ export default class Blob {
         this.fallTranslation = 0;
         this.floatingTranslation = new Vector2(0, 0);
         this.searchForWalls = true;
-        this.bbox = new Bbox(0, ARM_MAX_LENGTH * 2.5, 0, ARM_MAX_LENGTH * 2.5);
-        this.bodyGeometry = new SphereGeometry(20);
+        this.bboxBody = new Bbox(0, this.size * 2, 0, this.size * 2);
+        this.bboxLarge = new Bbox(0, ARM_MAX_LENGTH * 2.5, 0, ARM_MAX_LENGTH * 2.5);
+        this.bodyGeometry = new SphereGeometry(this.size);
         const material = new MeshBasicMaterial({color: '#ffffff', map: ImageLoader.get('mouth')});
         this.bodyMesh = new Mesh(this.bodyGeometry, material);
         Render.add(this.bodyMesh);
@@ -61,6 +63,12 @@ export default class Blob {
     onFrame() {
         this.time ++;
 
+        const touchedFogZones = Map.getFogZoneIntersectionForBbox(this.bboxBody);
+        touchedFogZones.forEach(fogZone => fogZone.dissolve());
+        Debug.view(touchedFogZones.length);
+        
+
+
         this.#updateKeyboardVector();
 
         if (this.arms.some(arm => arm.state === 'STATE_STUCKED') === true) {
@@ -83,7 +91,8 @@ export default class Blob {
             this.vectorPosition.copy(this.nextPosition)
         }
 
-        this.bbox.translate(this.vectorPosition.x, this.vectorPosition.y);
+        this.bboxLarge.translate(this.vectorPosition.x, this.vectorPosition.y);
+        this.bboxBody.translate(this.vectorPosition.x, this.vectorPosition.y);
 
         this.bodyMesh.position.x = this.vectorPosition.x;
         this.bodyMesh.position.y = this.vectorPosition.y;
@@ -97,7 +106,6 @@ export default class Blob {
 
         this.arms.map(arm => arm.onFrame(this.vectorPosition.x, this.vectorPosition.y));
         
-        this.#updateSize();
         this.#updateEyes();
 
         // this.produceAcid();
@@ -115,7 +123,7 @@ export default class Blob {
     }
 
     #hitWall(start, end) {
-        return Map.getWallIntersectionToCircle(end.x, end.y, 20, this.bbox);
+        return Map.getWallIntersectionToCircle(end.x, end.y, 20, this.bboxLarge);
     }
 
     #updateKeyboardVector() {
@@ -150,12 +158,6 @@ export default class Blob {
         this.eyes.forEach(eye => {
             eye.onFrame();
         });
-    }
-
-    #updateSize() {
-        const armsSize = this.arms.map(arm => arm.length).reduce((prev, cum) => prev + cum);
-        this.size = (2000 - armsSize) / 50;
-        // this.bodyMesh.scale.x = this.bodyMesh.scale.y = this.bodyMesh.scale.z = this.size * 0.05;
     }
 
     initArms(count) {

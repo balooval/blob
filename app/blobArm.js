@@ -221,7 +221,7 @@ class Arm {
 
     #getTouchedPoint() {
         const viewSegment = this.#getViewSegment();
-        return Map.getWallIntersectionForBbox(viewSegment, this.blob.bbox);
+        return Map.getWallIntersectionForBbox(viewSegment, this.blob.bboxLarge);
     }
 
     #getViewSegment() {

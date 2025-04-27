@@ -10,6 +10,7 @@ export function readMap(mapFileContent) {
       backgrounds: [],
       blocks: [],
       playerPosition: [0, -100],
+      fogZones: [],
     };
 
     [...doc.getElementsByTagName('mxCell')].forEach(cell => {
@@ -18,7 +19,6 @@ export function readMap(mapFileContent) {
           return;
         }
         const wall = [];
-        // const mxPoints = [...geometry.getElementsByTagName('mxPoint')];
         const mxPoints = readLinePoints(geometry);
         const shape = getStyleValue(cell, 'shape') ?? 'none';
 
@@ -29,6 +29,14 @@ export function readMap(mapFileContent) {
         }
         
         const color = getStyleValue(cell, 'fillColor') ?? 'none';
+        const opacity = getStyleValue(cell, 'opacity') ?? '100';
+
+        if (opacity === '80') {
+          const fog = readFogZone(geometry);
+          datas.fogZones.push(fog);
+          return;
+        }
+        
         
         if (mxPoints.length > 0) {
             // console.log(color);
@@ -56,6 +64,19 @@ export function readMap(mapFileContent) {
     // debugger
 
     return datas;
+}
+
+function readFogZone(geometry) {
+  const x = parseFloat(geometry.getAttribute('x'));
+  const y = 0 - parseFloat(geometry.getAttribute('y'));
+  const width = parseFloat(geometry.getAttribute('width'));
+  const height = parseFloat(geometry.getAttribute('height'));
+  return {
+    x: x,
+    y: y - height,
+    width: width,
+    height: height,
+  };
 }
 
 function readLinePoints(geometry) {
@@ -158,49 +179,6 @@ function readBox(geometry, rotation) {
         ],
       ],
     };
-
-    return [
-        [
-            {
-                x: x,
-                y: y,
-            },
-            {
-                x: x + width,
-                y: y,
-            },
-        ],
-        [
-            {
-                x: x + width,
-                y: y,
-            },
-            {
-                x: x + width,
-                y: y - height,
-            },
-        ],
-        [
-            {
-                x: x + width,
-                y: y - height,
-            },
-            {
-                x: x,
-                y: y - height,
-            },
-        ],
-        [
-            {
-                x: x,
-                y: y - height,
-            },
-            {
-                x: x,
-                y: y,
-            },
-        ]
-    ];
 }
 function readBackground(geometry) {
     const x = parseFloat(geometry.getAttribute('x'));

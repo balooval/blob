@@ -69,6 +69,10 @@ export function add(object) {
 	scene.add(object);
 }
 
+export function remove(object) {
+	scene.remove(object);
+}
+
 export function draw() {
 	renderer.setRenderTarget(null);
 	renderer.setClearColor(0x020f19, 1);

@@ -13,6 +13,14 @@ class Bbox {
         this.#updateSize();
     }
 
+    intersect(bbox) {
+        if (bbox.left > this.right) return false;
+        if (bbox.right < this.left) return false;
+        if (bbox.top < this.bottom) return false;
+        if (bbox.bottom > this.top) return false;
+        return true;
+    }
+
     translate(x, y) {
         const marginHor = this.width / 2;
         const marginVert = this.height / 2;

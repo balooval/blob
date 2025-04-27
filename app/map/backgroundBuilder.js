@@ -11,9 +11,11 @@ import * as ImageLoader from '../ImageLoader.js';
 const TYPE_A = 'TYPE_A';
 const TYPE_LAB_A = 'TYPE_LAB_A';
 const TYPE_LAB_B = 'TYPE_LAB_B';
+export const TYPE_DEBUG = 'TYPE_DEBUG';
 const backgroundMaterial = new MeshBasicMaterial({color: '#909090'});
 const labAMaterial = new MeshBasicMaterial({color: '#ffffff'});
 const labBMaterial = new MeshBasicMaterial({color: '#ffffff'});
+const debugMaterial = new MeshBasicMaterial({color: '#000000', transparent: true, opacity: 0.9});
 
 const typesProps = {
     TYPE_A: {
@@ -34,6 +36,12 @@ const typesProps = {
         scaleX: 500,
         scaleY: 300,
     },
+    TYPE_DEBUG: {
+        zPosBack: 10,
+        frontMaterial: debugMaterial,
+        scaleX: 500,
+        scaleY: 300,
+    },
 };
 
 const colorsTypes = {
@@ -42,6 +50,13 @@ const colorsTypes = {
     '#d5e8d4': TYPE_LAB_B,
 };
 
+export function init() {
+    backgroundMaterial.map = ImageLoader.get('background');
+    labBMaterial.map = ImageLoader.get('scifi-lab');
+    labAMaterial.map = ImageLoader.get('background-labo-a');
+    // debugMaterial.map = ImageLoader.get('debug');
+}
+
 export function getColorType(color) {
     // console.log(color);
     
@@ -49,10 +64,6 @@ export function getColorType(color) {
 }
 
 export function buildBackgroundMesh(backgrounds) {
-    backgroundMaterial.map = ImageLoader.get('background');
-    labBMaterial.map = ImageLoader.get('scifi-lab');
-    labAMaterial.map = ImageLoader.get('background-labo-a');
-
     const backgroundsByType = backgrounds.reduce((res, background) => {
         res[background.type] = res[background.type] ?? [];
         res[background.type].push(background);
