@@ -9,11 +9,56 @@ import * as Keyboard from './keyboard.js';
 import * as Gamepad from './gamepad.js';
 import * as Camera from './camera.js';
 import * as Debug from './debug.js';
+import * as MapReader from './mapReader.js';
 
 let blob;
 
 export function init() {
+	loadMap();
+}
+
+function loadMap() {
+	Map.loadMap().then(res => loadtextures());
+}
+
+function loadtextures() {
 	ImageLoader.loadBatch([
+		{
+			id: 'debug',
+			url: './assets/debug.png'
+		},
+		{
+			id: 'side',
+			url: './assets/side.png'
+		},
+		{
+			id: 'grid',
+			url: './assets/grid.png'
+		},
+		{
+			id: 'scifi-lab',
+			url: './assets/scifi-lab.png'
+		},
+		{
+			id: 'background-labo-a',
+			url: './assets/background-labo-a.png'
+		},
+		{
+			id: 'wall',
+			url: './assets/wall.png'
+		},
+		{
+			id: 'wodden-box',
+			url: './assets/wodden-box.png'
+		},
+		{
+			id: 'tiles',
+			url: './assets/tiles.png'
+		},
+		{
+			id: 'background',
+			url: './assets/background.png'
+		},
 		{
 			id: 'mouth',
 			url: './assets/mouth.png'
@@ -36,17 +81,21 @@ export function init() {
 		},
 		
 	]).then(res => {
-		Debug.init();
-		Render.init('viewport');
-		UiMouse.init('viewport');
-		Keyboard.init();
-		Gamepad.init();
-		
-		Map.init();
-		blob =  new Blob();
-		Camera.init(Render.camera, blob);
-		onFrame();
+		onRessourcesLoaded();
 	});
+}
+
+function onRessourcesLoaded() {
+	Debug.init();
+	Render.init('viewport');
+	UiMouse.init('viewport');
+	Keyboard.init();
+	Gamepad.init();
+	
+	Map.init();
+	blob =  new Blob();
+	Camera.init(Render.camera, blob);
+	onFrame();
 }
 
 function onFrame() {

@@ -4,7 +4,7 @@ import * as Utils from './utils.js';
 
 let splats = [];
 const pool = [];
-const gravity = 0.1;
+const gravity = 0.05;
 const geometry = new CircleBufferGeometry(4, 8);
 const bloodMaterials = [
     new MeshBasicMaterial({color: 0xdd0000, transparent: true, opacity: 0.6}),

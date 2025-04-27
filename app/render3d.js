@@ -2,6 +2,7 @@ import {
 	AmbientLight,
 	Mesh,
 	OrthographicCamera,
+	PerspectiveCamera,
 	PlaneGeometry,
 	PointLight,
 	PointLightHelper,
@@ -30,7 +31,14 @@ export function init(elmtId) {
 	const mainElmt = document.getElementById(elmtId);
 	renderer = new WebGLRenderer({antialias: true});
 	mainElmt.appendChild(renderer.domElement);
-	camera = new OrthographicCamera(cameraWidth / -2, cameraWidth / 2, cameraHeight / 2, cameraHeight / -2, 1, 1000);
+	
+	// camera = new OrthographicCamera(cameraWidth / -2, cameraWidth / 2, cameraHeight / 2, cameraHeight / -2, 1, 1000);
+	// camera.position.set(0, 0, 100);
+	// camera.lookAt(new Vector3(0, 0, 0));
+	
+	camera = new PerspectiveCamera(75, 4/3);
+	camera.position.set(0, 0, 400);
+	camera.lookAt(new Vector3(0, 0, 0));
 
 	window.onresize = function () {
 		renderer.setSize(mainElmt.clientWidth, mainElmt.clientWidth / ratio);
@@ -40,17 +48,15 @@ export function init(elmtId) {
 
 	window.onresize();
 	scene = new Scene();
-	camera.position.set(0, 0, 100);
-	camera.lookAt(new Vector3(0, 0, 0));
 	scene.add(camera);
 
 	const geoPlane = new PlaneGeometry(worldWidth * 2, worldHeight * 2);
 	mousePositionMesh = new Mesh(geoPlane);
 	// scene.add(mousePositionMesh);
 
-	const light = new PointLight(0xffffff, 2, 1000, 1);
-	light.position.set(0, 0, 50);
-	scene.add(light);
+	// const light = new PointLight(0xffffff, 2, 1000, 1);
+	// light.position.set(0, 0, 0);
+	// scene.add(light);
 	
 	// const helper = new PointLightHelper(light);
 	// scene.add(helper);
@@ -65,7 +71,7 @@ export function add(object) {
 
 export function draw() {
 	renderer.setRenderTarget(null);
-	renderer.setClearColor(0x202020, 1);
+	renderer.setClearColor(0x020f19, 1);
 	renderer.clear();
 	renderer.render(scene, camera);
 }

@@ -43,7 +43,7 @@ class Arm {
         this.targetPosX = this.posX + Math.cos(this.angle) * this.length;
         this.targetPosY = this.posY + Math.sin(this.angle) * this.length;
 
-        this.wallPoint = {wall: null, intersection: {x: 0, y: 0}};
+        this.wallPoint = {intersection: {x: 0, y: 0}};
         this.isStuck = false;
         this.time = Math.round(Utils.random(0, 100));
         this.timeDirection = Utils.random(-0.1, 0.1);
@@ -407,7 +407,7 @@ class Arm {
         const positions = [];
         const normals = [];
         const uv = [];
-        const z = Utils.random(5, 15);
+        const z = Utils.random(-5, 5);
         
         for (let i = 0; i < segmentsCount + 1; i ++) {
             positions.push(

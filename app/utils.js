@@ -159,3 +159,34 @@ export function hslToRgb(h, s, l) {
     const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
     return [255 * f(0), 255 * f(8), 255 * f(4)];
 };
+
+export function circleDistFromLineSeg(pointX, pointY, startX, startY, endX, endY) {
+    const v1 = {
+        x: endX - startX,
+        y: endY - startY,
+    };
+    const v2 = {
+        x: pointX - startX,
+        y: pointY - startY,
+    };
+    const v3 = {
+        x: 0,
+        y: 0,
+    };
+    const u = (v2.x * v1.x + v2.y * v1.y) / (v1.y * v1.y + v1.x * v1.x); // unit dist of point on line
+    if(u >= 0 && u <= 1){
+        v3.x = (v1.x * u + startX) - pointX;
+        v3.y = (v1.y * u + startY) - pointY;
+        v3.x *= v3.x;
+        v3.y *= v3.y;
+        return Math.sqrt(v3.y + v3.x); // return distance from line
+    } 
+    // get distance from end points
+    v3.x = pointX - endX;
+    v3.y = pointY - endY;
+    v3.x *= v3.x;  // square vectors
+    v3.y *= v3.y;    
+    v2.x *= v2.x;
+    v2.y *= v2.y;
+    return Math.min(Math.sqrt(v2.y + v2.x), Math.sqrt(v3.y + v3.x)); // return smaller of two distances as the result
+}
