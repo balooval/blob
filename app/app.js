@@ -9,9 +9,11 @@ import * as Keyboard from './keyboard.js';
 import * as Gamepad from './gamepad.js';
 import * as Camera from './camera.js';
 import * as Debug from './debug.js';
-import * as MapReader from './mapReader.js';
 
 let blob;
+const minimalTimePerFrame = 16;
+
+let lastRenderTime = performance.now();
 
 export function init() {
 	loadMap();
@@ -98,11 +100,20 @@ function onRessourcesLoaded() {
 	onFrame();
 }
 
-function onFrame() {
+function onFrame(timestamp) {
+	requestAnimationFrame(onFrame);
+	const elapsed = timestamp - lastRenderTime;
+
+	
+	if (elapsed < minimalTimePerFrame) {
+		return;
+	}
+	
+	lastRenderTime = timestamp;
+
 	Render.draw();
 	blob.onFrame();
 	Stain.onFrame();
 	Splats.onFrame();
 	Camera.onFrame();
-	requestAnimationFrame(onFrame);
 }

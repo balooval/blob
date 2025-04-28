@@ -41,9 +41,9 @@ function buildWalls() {
     playerPosition = mapDatas.playerPosition;
 
 
-    mapDatas.fogZones.forEach(fogZoneData => {
-        fogZones.push(new FogZone(fogZoneData));
-    });
+    // mapDatas.fogZones.forEach(fogZoneData => {
+    //     fogZones.push(new FogZone(fogZoneData));
+    // });
 
     mapDatas.blocks.forEach(blockData => {
         blocksObjects.push(new Block(blockData));

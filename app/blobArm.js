@@ -48,7 +48,7 @@ class Arm {
         this.wallPoint = {intersection: {x: 0, y: 0}};
         this.isStuck = false;
         this.time = Math.round(Utils.random(0, 100));
-        this.timeDirection = Utils.random(-0.1, 0.1);
+        this.timeDirection = Utils.random(-0.5, 0.5);
         this.hsl = [1, Utils.random(35, 80), 40];
         this.eyeClosed = true;
         this.softness = Utils.randomize(4, 2) / this.baseWidth;
@@ -87,7 +87,7 @@ class Arm {
         this.time += this.timeDirection;
         this.update();
         this.segments = this.#buildSegments();
-        this.#updageSegmentsGeometry();
+        this.#updateSegmentsGeometry();
 
         if (this.state === Arm.#STATE_STUCKED) {
             return this.#updateStuckState();
@@ -183,8 +183,6 @@ class Arm {
     }
     
     idle() {
-        // this.viewAngle = this.baseAngle + Math.cos(this.time * 0.1) * 0.5;
-        
         const currentDirection = new Vector2(Math.cos(this.viewAngle), Math.sin(this.viewAngle))
         const forcedDirection = new Vector2(Math.cos(this.baseAngle), Math.sin(this.baseAngle))
         .add(this.forcedDirection)
@@ -197,10 +195,8 @@ class Arm {
         );
 
         this.viewAngle = new Vector2(finalDirection[0], finalDirection[1]).angle();
-        this.viewAngle += Math.cos(this.time * 1) * 0.1;
+        this.viewAngle += Math.cos(this.time) * 0.1;
 
-        // const forcedLength = 5 + this.forcedDirection.length() * 5;
-        
         const waveLenght = Math.abs(Math.cos(this.time * 0.01) * (this.baseLength * 5));
         this.targetPosition.x = this.vectorPosition.x + Math.cos(this.viewAngle) * waveLenght;
         this.targetPosition.y = this.vectorPosition.y + Math.sin(this.viewAngle) * waveLenght;
@@ -397,7 +393,8 @@ class Arm {
 
     #buildMeshFace(segmentsCount) {
         const material = new MeshBasicMaterial({
-            color: 0xff0000,
+            // color: 0xff0000,
+            color: 0xffffff,
             map: ImageLoader.get('test'),
         });
         let index = 0;
@@ -449,7 +446,7 @@ class Arm {
         return new Mesh(geometry, material);
     }
 
-    #updageSegmentsGeometry() {
+    #updateSegmentsGeometry() {
         this.meshSegments.position.x = this.vectorPosition.x;
         this.meshSegments.position.y = this.vectorPosition.y;
         this.meshStraight.position.x = this.vectorPosition.x;
@@ -482,8 +479,8 @@ class Arm {
             positionsValues[indexFace + 3] = startX + offsetX;
             positionsValues[indexFace + 4] = startY + offsetY;
 
-            uvValues[indexUv + 1] = i * 0.1 + Math.abs(this.time) * 0.05;
-            uvValues[indexUv + 3] = i * 0.1 + Math.abs(this.time) * 0.05;
+            uvValues[indexUv + 1] = i * 0.2 + Math.abs(this.time) * 0.02;
+            uvValues[indexUv + 3] = i * 0.2 + Math.abs(this.time) * 0.02;
 
             if (i === this.segmentsCount - 1) {
                 indexFace += 6;
@@ -500,7 +497,6 @@ class Arm {
         uvAttribute.needsUpdate = true;
 
         this.meshSegments.geometry.computeVertexNormals();
-
 
 
         let positionAttributeStraight = this.meshStraight.geometry.attributes.position;

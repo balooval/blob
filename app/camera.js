@@ -39,7 +39,7 @@ export function onFrame() {
 		return;
 	}
 
-	const newPos = Utils.lerpVector(camera.position, target.vectorPosition, 0.02);
+	const newPos = Utils.lerpVector(camera.position, target.vectorPosition, 0.06);
 	camera.position.x = newPos.x;
 	camera.position.y = newPos.y;
 }

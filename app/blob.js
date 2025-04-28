@@ -16,7 +16,7 @@ import * as Splats from './splats.js';
 import * as Debug from './debug.js';
 
 const ARM_MAX_LENGTH = 150;
-const GRAVITY_ACCEL = 0.2;
+const GRAVITY_ACCEL = 0.7;
 // const ARM_COUNT = 4;
 const ARM_COUNT = 16;
 
@@ -33,7 +33,6 @@ export default class Blob {
         this.moveAngle = 0;
         this.arms = this.initArms(ARM_COUNT);
         this.time = 0;
-        this.fallTranslation = 0;
         this.floatingTranslation = new Vector2(0, 0);
         this.searchForWalls = true;
         this.bboxBody = new Bbox(0, this.size * 2, 0, this.size * 2);
@@ -63,19 +62,12 @@ export default class Blob {
     onFrame() {
         this.time ++;
 
-        const touchedFogZones = Map.getFogZoneIntersectionForBbox(this.bboxBody);
-        touchedFogZones.forEach(fogZone => fogZone.dissolve());
-        Debug.view(touchedFogZones.length);
-        
-
-
+        // this.activeFogZones();
         this.#updateKeyboardVector();
 
         if (this.arms.some(arm => arm.state === 'STATE_STUCKED') === true) {
-            this.fallTranslation = 0;
             this.floatingTranslation.copy(this.keyboardVector);
         } else {
-            this.fallTranslation += 0.3;
             this.floatingTranslation.x *= 0.999;
             this.floatingTranslation.y -= GRAVITY_ACCEL;
         }
@@ -111,6 +103,11 @@ export default class Blob {
         // this.produceAcid();
     }
 
+    activeFogZones() {
+        const touchedFogZones = Map.getFogZoneIntersectionForBbox(this.bboxBody);
+        touchedFogZones.forEach(fogZone => fogZone.dissolve());
+    }
+
     produceAcid() {
         this.acidProduction += Utils.random(0, 1);
         const acidQuantity = Utils.random(0, 500);
@@ -139,7 +136,7 @@ export default class Blob {
         this.keyboardMove.copy(this.keyboardVector);
         const moveVector = new Vector2(this.keyboardVector.x, this.keyboardVector.y);
         const forces = this.arms.map(arm => arm.getAttractForce(moveVector));
-        const total = Math.min(3, Utils.addNumbers(forces) * 50);
+        const total = Math.min(8, Utils.addNumbers(forces) * 120);
         this.keyboardVector.multiplyScalar(total);
 
         return this.keyboardVector;
@@ -274,8 +271,8 @@ class Eye {
     }
 
     onFrame() {
-        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translationDone.x, 0.05);
-        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translationDone.y, 0.05);
+        this.lookAtX = Utils.lerpFloat(this.lookAtX, this.blob.translationDone.x, 0.2);
+        this.lookAtY = Utils.lerpFloat(this.lookAtY, this.blob.translationDone.y, 0.2);
         
         this.time += this.timeDirection * 0.05;
 

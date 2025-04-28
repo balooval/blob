@@ -4,7 +4,7 @@ import * as Utils from './utils.js';
 
 let splats = [];
 const pool = [];
-const gravity = 0.05;
+const GRAVITY_ACCEL = 0.5;
 const geometry = new CircleBufferGeometry(4, 8);
 const bloodMaterials = [
     new MeshBasicMaterial({color: 0xdd0000, transparent: true, opacity: 0.6}),
@@ -33,8 +33,8 @@ function add(posX, posY, dirX, dirY, count, materialList) {
         Renderer.add(mesh);
 
         splats.push({
-            accelX: Utils.random(dirX * -0.2, dirX * -0.6),
-            accelY: Utils.random(dirY * -0.2, dirY * -0.6),
+            accelX: Utils.random(dirX * -0.2, dirX * -1.2),
+            accelY: Utils.random(dirY * -0.8, dirY * -2),
             alpha: 1,
             mesh: mesh,
         });
@@ -52,11 +52,11 @@ export function onFrame() {
 }
 
 function updateSplat(splat) {
-    splat.alpha *= 0.985;
+    splat.alpha *= 0.96;
     splat.mesh.scale.x = splat.mesh.scale.y = splat.mesh.scale.z = splat.alpha;
 
     splat.mesh.position.x += splat.accelX;
-    splat.accelY -= gravity;
+    splat.accelY -= GRAVITY_ACCEL;
     splat.mesh.position.y += splat.accelY;
 }
 
